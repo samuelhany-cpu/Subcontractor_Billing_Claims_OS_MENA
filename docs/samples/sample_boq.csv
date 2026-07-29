@@ -1,0 +1,4 @@
+section_code,section_name_en,section_name_ar,item_code,description_en,description_ar,unit,quantity,rate
+01,Electrical Works,الأعمال الكهربائية,E-001,Supply and install cable tray,توريد وتركيب حوامل الكابلات,m,1200,18.50
+01,Electrical Works,الأعمال الكهربائية,E-002,Supply and install power cable,توريد وتركيب كابلات القوى,m,3500,12.75
+02,Fire Alarm,إنذار الحريق,F-001,Addressable smoke detector,كاشف دخان معنون,no,220,48.00

@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: subcontractor_claims_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: claims_user
+      POSTGRES_PASSWORD: claims_password
+      POSTGRES_DB: claims_os
+    ports:
+      - '5432:5432'
+    volumes:
+      - claims_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U claims_user -d claims_os']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  claims_postgres_data:

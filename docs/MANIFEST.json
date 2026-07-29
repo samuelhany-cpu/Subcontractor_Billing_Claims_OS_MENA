@@ -1,0 +1,32 @@
+{
+  "project": "Subcontractor Billing & Claims OS for MENA",
+  "packVersion": "1.0.0",
+  "language": "English source docs with Arabic product requirements",
+  "recommendedAgents": [
+    "Claude",
+    "Codex"
+  ],
+  "readOrder": [
+    "00_README.md",
+    "product/01_PRODUCT_VISION.md",
+    "product/02_BRD.md",
+    "product/03_PRD_MVP.md",
+    "product/04_SCOPE_AND_NON_GOALS.md",
+    "product/05_PERSONAS_AND_JTBD.md",
+    "product/06_WORKFLOWS_AND_STATE_MACHINES.md",
+    "product/07_FUNCTIONAL_REQUIREMENTS.md",
+    "product/08_NON_FUNCTIONAL_REQUIREMENTS.md",
+    "architecture/01_SYSTEM_ARCHITECTURE.md",
+    "architecture/02_DATA_MODEL.md",
+    "architecture/03_RBAC_AND_TENANCY.md",
+    "architecture/04_CALCULATION_RULES.md",
+    "schemas/database_schema.sql",
+    "schemas/openapi.yaml",
+    "engineering/01_ENGINEERING_STANDARDS.md",
+    "engineering/02_SECURITY_AND_PRIVACY.md",
+    "engineering/03_TEST_STRATEGY.md",
+    "delivery/01_RELEASE_PLAN_AND_BACKLOG.md",
+    "prompts/CLAUDE_MASTER_PROMPT.md",
+    "prompts/CODEX_MASTER_PROMPT.md"
+  ]
+}

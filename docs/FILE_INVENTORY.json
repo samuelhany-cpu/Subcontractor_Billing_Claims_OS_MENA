@@ -1,0 +1,154 @@
+[
+  {
+    "path": "00_README.md",
+    "bytes": 3469
+  },
+  {
+    "path": "ARABIC_HANDOFF_GUIDE.md",
+    "bytes": 1774
+  },
+  {
+    "path": "MANIFEST.json",
+    "bytes": 1058
+  },
+  {
+    "path": "architecture/01_SYSTEM_ARCHITECTURE.md",
+    "bytes": 3701
+  },
+  {
+    "path": "architecture/02_DATA_MODEL.md",
+    "bytes": 4091
+  },
+  {
+    "path": "architecture/03_RBAC_AND_TENANCY.md",
+    "bytes": 2720
+  },
+  {
+    "path": "architecture/04_CALCULATION_RULES.md",
+    "bytes": 2983
+  },
+  {
+    "path": "delivery/01_RELEASE_PLAN_AND_BACKLOG.md",
+    "bytes": 3452
+  },
+  {
+    "path": "delivery/02_ACCEPTANCE_CRITERIA.md",
+    "bytes": 2127
+  },
+  {
+    "path": "delivery/03_PRODUCT_ANALYTICS_AND_KPIS.md",
+    "bytes": 1560
+  },
+  {
+    "path": "delivery/04_RISK_REGISTER.md",
+    "bytes": 1610
+  },
+  {
+    "path": "delivery/05_ADR_LOG.md",
+    "bytes": 1431
+  },
+  {
+    "path": "delivery/06_DEFINITION_OF_READY_AND_DONE.md",
+    "bytes": 970
+  },
+  {
+    "path": "delivery/07_PILOT_PLAN.md",
+    "bytes": 1345
+  },
+  {
+    "path": "delivery/08_PRICING_ASSUMPTIONS.md",
+    "bytes": 1014
+  },
+  {
+    "path": "engineering/01_ENGINEERING_STANDARDS.md",
+    "bytes": 2717
+  },
+  {
+    "path": "engineering/02_SECURITY_AND_PRIVACY.md",
+    "bytes": 2644
+  },
+  {
+    "path": "engineering/03_TEST_STRATEGY.md",
+    "bytes": 2281
+  },
+  {
+    "path": "engineering/04_OBSERVABILITY_AND_RUNBOOK.md",
+    "bytes": 1670
+  },
+  {
+    "path": "product/01_PRODUCT_VISION.md",
+    "bytes": 2814
+  },
+  {
+    "path": "product/02_BRD.md",
+    "bytes": 4151
+  },
+  {
+    "path": "product/03_PRD_MVP.md",
+    "bytes": 5491
+  },
+  {
+    "path": "product/04_SCOPE_AND_NON_GOALS.md",
+    "bytes": 1873
+  },
+  {
+    "path": "product/05_PERSONAS_AND_JTBD.md",
+    "bytes": 2715
+  },
+  {
+    "path": "product/06_WORKFLOWS_AND_STATE_MACHINES.md",
+    "bytes": 2951
+  },
+  {
+    "path": "product/07_FUNCTIONAL_REQUIREMENTS.md",
+    "bytes": 4636
+  },
+  {
+    "path": "product/08_NON_FUNCTIONAL_REQUIREMENTS.md",
+    "bytes": 2926
+  },
+  {
+    "path": "product/09_UX_INFORMATION_ARCHITECTURE.md",
+    "bytes": 1659
+  },
+  {
+    "path": "product/10_GLOSSARY.md",
+    "bytes": 1873
+  },
+  {
+    "path": "prompts/AGENT_HANDOFF_WORKFLOW.md",
+    "bytes": 1416
+  },
+  {
+    "path": "prompts/CLAUDE_MASTER_PROMPT.md",
+    "bytes": 2259
+  },
+  {
+    "path": "prompts/CODEX_MASTER_PROMPT.md",
+    "bytes": 2311
+  },
+  {
+    "path": "prompts/FIRST_CLAUDE_TASK.md",
+    "bytes": 579
+  },
+  {
+    "path": "prompts/FIRST_CODEX_TASK.md",
+    "bytes": 864
+  },
+  {
+    "path": "samples/sample_boq.csv",
+    "bytes": 528
+  },
+  {
+    "path": "samples/sample_project.json",
+    "bytes": 660
+  },
+  {
+    "path": "schemas/database_schema.sql",
+    "bytes": 17980
+  },
+  {
+    "path": "schemas/openapi.yaml",
+    "bytes": 11726
+  }
+]

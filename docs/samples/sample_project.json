@@ -1,0 +1,26 @@
+{
+  "client": {
+    "name": "Example Main Contractor LLC",
+    "countryCode": "SA"
+  },
+  "project": {
+    "reference": "PRJ-001",
+    "name": "Mixed-Use Tower MEP Package",
+    "countryCode": "SA",
+    "currencyCode": "SAR",
+    "timezone": "Asia/Riyadh",
+    "reportingLocale": "en"
+  },
+  "contract": {
+    "reference": "SC-MEP-2026-014",
+    "originalValue": "8500000.0000",
+    "retentionRate": "0.10",
+    "retentionCapType": "percentage_of_contract",
+    "retentionCapValue": "0.05",
+    "advanceAmount": "850000.0000",
+    "advanceRecoveryMethod": "percentage",
+    "advanceRecoveryRate": "0.10",
+    "paymentTermDays": 45,
+    "taxRate": "0.15"
+  }
+}
