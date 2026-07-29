@@ -13,6 +13,12 @@
     "dev:web": "pnpm --filter @claims-os/web dev",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "infra:check": "pnpm --filter @claims-os/api infra:check",
+    "infra:down": "docker compose down",
+    "infra:logs": "docker compose logs --tail=200",
+    "infra:reset": "docker compose down --volumes --remove-orphans",
+    "infra:status": "docker compose ps",
+    "infra:up": "docker compose up -d",
     "lint": "turbo run lint",
     "test": "turbo run test",
     "typecheck": "turbo run typecheck"
@@ -22,5 +28,11 @@
     "prettier": "^3.9.0",
     "turbo": "^2.5.0",
     "typescript": "^5.9.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@prisma/engines",
+      "prisma"
+    ]
   }
 }
