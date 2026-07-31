@@ -2,7 +2,7 @@
   "name": "@claims-os/domain",
   "version": "0.0.0",
   "private": true,
-  "type": "module",
+  "type": "commonjs",
   "main": "./dist/src/index.js",
   "types": "./dist/src/index.d.ts",
   "exports": {
@@ -16,12 +16,15 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "test": "pnpm run build && node --test dist/test/package-boundary.test.js",
+    "test": "pnpm run build && node --test dist/test/package-boundary.test.js dist/test/projects.test.js",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@claims-os/config": "workspace:*",
     "@types/node": "^24.0.0",
     "typescript": "^5.9.0"
+  },
+  "dependencies": {
+    "zod": "^4.4.3"
   }
 }

@@ -11,9 +11,16 @@ paths:
       parameters:
         - in: query
           name: status
-          schema: { type: string, enum: [ACTIVE, ARCHIVED] }
+          schema: { type: string, enum: [ACTIVE, ARCHIVED, ALL], default: ALL }
       responses:
-        "200": { description: Projects returned }
+        "200":
+          description: Projects returned with exact totals
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Project" }
+        "400": { $ref: "#/components/responses/BadRequest" }
     post:
       operationId: createProject
       requestBody:
@@ -22,41 +29,80 @@ paths:
           application/json:
             schema: { $ref: "#/components/schemas/CreateProject" }
       responses:
-        "201": { description: Project created }
+        "201":
+          description: Project created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Project" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "409": { $ref: "#/components/responses/Conflict" }
   /projects/{projectId}:
     get:
       operationId: getProject
-      parameters: [ { $ref: "#/components/parameters/ProjectId" } ]
+      parameters: [{ $ref: "#/components/parameters/ProjectId" }]
       responses:
-        "200": { description: Project returned }
+        "200":
+          description: Project returned
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Project" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
     patch:
       operationId: updateProject
-      parameters: [ { $ref: "#/components/parameters/ProjectId" } ]
+      parameters: [{ $ref: "#/components/parameters/ProjectId" }]
       requestBody:
         required: true
         content:
           application/json:
             schema: { $ref: "#/components/schemas/UpdateProject" }
       responses:
-        "200": { description: Project updated }
+        "200":
+          description: Active project updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Project" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
   /projects/{projectId}/archive:
     post:
       operationId: archiveProject
-      parameters: [ { $ref: "#/components/parameters/ProjectId" } ]
+      parameters: [{ $ref: "#/components/parameters/ProjectId" }]
       responses:
-        "200": { description: Project archived }
+        "200":
+          description: Project archived with related records retained
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Project" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
   /projects/{projectId}/restore:
     post:
       operationId: restoreProject
-      parameters: [ { $ref: "#/components/parameters/ProjectId" } ]
+      parameters: [{ $ref: "#/components/parameters/ProjectId" }]
       responses:
-        "200": { description: Project restored }
+        "200":
+          description: Archived project restored
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Project" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
   /projects/{projectId}/dashboard:
     get:
       operationId: getProjectDashboard
-      parameters: [ { $ref: "#/components/parameters/ProjectId" } ]
+      parameters: [{ $ref: "#/components/parameters/ProjectId" }]
       responses:
-        "200": { description: Dashboard returned }
+        "200":
+          description: Minimal project summary returned without charts
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProjectDashboard" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
   /expenses:
     get:
       operationId: listExpenses
@@ -242,6 +288,22 @@ paths:
       responses:
         "200": { description: Draft cancelled }
 components:
+  responses:
+    BadRequest:
+      description: Request validation failed
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+    NotFound:
+      description: Project not found
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+    Conflict:
+      description: Project name or state conflict
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
   parameters:
     ProjectId:
       in: path
@@ -263,19 +325,77 @@ components:
       type: string
       pattern: '^\d+(\.\d{1,2})?$'
       examples: ["10000.00"]
+    SignedMoney:
+      type: string
+      pattern: '^-?\d+(\.\d{1,2})?$'
+      examples: ["-100.00", "0.00", "10000.00"]
+    ProjectStatus:
+      type: string
+      enum: [ACTIVE, ARCHIVED]
+    ProjectTotals:
+      type: object
+      required: [totalIncomingTransfers, totalExpenses, totalFunding, availableBalance, expenseCount]
+      properties:
+        totalIncomingTransfers: { $ref: "#/components/schemas/Money" }
+        totalExpenses: { $ref: "#/components/schemas/Money" }
+        totalFunding: { $ref: "#/components/schemas/SignedMoney" }
+        availableBalance: { $ref: "#/components/schemas/SignedMoney" }
+        expenseCount: { type: integer, minimum: 0 }
+    Project:
+      type: object
+      required: [id, name, status, openingBalance, openingBalanceDate, archivedAt, createdAt, updatedAt, totals]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string, minLength: 1, maxLength: 200 }
+        status: { $ref: "#/components/schemas/ProjectStatus" }
+        openingBalance: { $ref: "#/components/schemas/SignedMoney" }
+        openingBalanceDate: { type: [string, "null"], format: date }
+        archivedAt: { type: [string, "null"], format: date-time }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        totals: { $ref: "#/components/schemas/ProjectTotals" }
+    ProjectDashboard:
+      allOf:
+        - { $ref: "#/components/schemas/ProjectTotals" }
+        - type: object
+          required: [projectId, status, openingBalance]
+          properties:
+            projectId: { type: string, format: uuid }
+            status: { $ref: "#/components/schemas/ProjectStatus" }
+            openingBalance: { $ref: "#/components/schemas/SignedMoney" }
     CreateProject:
       type: object
+      additionalProperties: false
       required: [name]
       properties:
         name: { type: string, minLength: 1, maxLength: 200 }
-        openingBalance: { $ref: "#/components/schemas/Money" }
+        openingBalance: { $ref: "#/components/schemas/SignedMoney" }
         openingBalanceDate: { type: [string, "null"], format: date }
     UpdateProject:
       type: object
+      additionalProperties: false
+      minProperties: 1
       properties:
         name: { type: string, minLength: 1, maxLength: 200 }
-        openingBalance: { $ref: "#/components/schemas/Money" }
+        openingBalance: { $ref: "#/components/schemas/SignedMoney" }
         openingBalanceDate: { type: [string, "null"], format: date }
+    Problem:
+      type: object
+      required: [type, title, status, code, detail]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        code: { type: string }
+        detail: { type: string }
+        correlationId: { type: string }
+        errors:
+          type: array
+          items:
+            type: object
+            required: [message]
+            properties:
+              message: { type: string }
     ExpenseInput:
       type: object
       required: [projectId, expenseDate, description]
