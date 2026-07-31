@@ -4,6 +4,7 @@ import { RedisClient, RedisService } from './redis.service';
 function createClient(): jest.Mocked<RedisClient> {
   return {
     connect: jest.fn().mockResolvedValue(undefined),
+    disconnect: jest.fn(),
     ping: jest.fn().mockResolvedValue('PONG'),
     quit: jest.fn().mockResolvedValue('OK'),
   };
@@ -35,5 +36,19 @@ describe('RedisService', () => {
       new InfrastructureDependencyError('redis'),
     );
     await expect(service.checkReadiness()).resolves.toBeUndefined();
+  });
+
+  it('stops a retrying client after a failed initial connection', async () => {
+    const client = createClient();
+    client.connect.mockRejectedValueOnce(new Error('connection refused'));
+    const service = new RedisService(client);
+
+    await expect(service.checkReadiness()).rejects.toEqual(
+      new InfrastructureDependencyError('redis'),
+    );
+    await service.onApplicationShutdown();
+
+    expect(client.disconnect.mock.calls).toEqual([[false]]);
+    expect(client.quit.mock.calls).toHaveLength(0);
   });
 });

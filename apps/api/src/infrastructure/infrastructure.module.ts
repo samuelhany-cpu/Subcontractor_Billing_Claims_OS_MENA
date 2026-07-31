@@ -35,6 +35,7 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
       inject: [API_RUNTIME_CONFIG],
       useFactory: (config: ApiRuntimeConfig): RedisClient =>
         new Redis(config.redis.url, {
+          connectTimeout: config.diagnostics.healthCheckTimeoutMs,
           enableOfflineQueue: false,
           lazyConnect: true,
           maxRetriesPerRequest: 1,

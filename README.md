@@ -96,10 +96,23 @@ pnpm dev:web
 
 Default addresses:
 
-- API scaffold: `http://localhost:4000`
+- API: `http://localhost:4000/api/v1`
 - Web scaffold: `http://localhost:3000`
 
-FOUND-001B does not add the complete health API or business endpoints.
+The API currently exposes diagnostics only:
+
+| Endpoint                   | Purpose                                                  |
+| -------------------------- | -------------------------------------------------------- |
+| `GET /api/v1/health/live`  | Fast process liveness; never calls external dependencies |
+| `GET /api/v1/health/ready` | PostgreSQL, Redis, and object-storage readiness          |
+
+Readiness returns HTTP 200 only when every check is `up`; otherwise it returns
+HTTP 503 with sanitized dependency states.
+
+```bash
+curl -i http://localhost:4000/api/v1/health/live
+curl -i http://localhost:4000/api/v1/health/ready
+```
 
 ## Runtime configuration
 
@@ -113,6 +126,30 @@ place a server credential in a variable prefixed with `NEXT_PUBLIC_`.
 
 The standalone connectivity check reports dependency names and readiness only;
 it never logs connection strings, access keys, secret keys, or signed URLs.
+It loads the committed development placeholders from
+`apps/api/.env.test.example`; explicitly supplied process variables take
+precedence, so customized local dependency credentials can be tested without
+committing a local `.env`.
+
+## Request correlation and logs
+
+Every API response includes `x-correlation-id`. A caller value is preserved
+when it is 1–128 characters, starts with an alphanumeric character, and
+contains only letters, digits, `.`, `_`, `:`, or `-`; missing or invalid values
+are replaced with a UUID. This identifier is diagnostic context, never an
+authorization credential.
+
+Pino emits structured records with service, environment, event, timestamp, and
+correlation context. `LOG_LEVEL` selects the threshold. `LOG_FORMAT=json` is
+the default and is mandatory in production; `LOG_FORMAT=pretty` is an explicit
+local-development option. `REQUEST_LOGGING=false` disables completion records
+without disabling correlation. Successful diagnostics traffic logs at debug
+to reduce probe noise.
+
+Request/response bodies are not logged. Authorization, cookies,
+password/token/key/secret fields, connection URLs, and signed URLs are
+redacted. Unexpected errors return RFC 7807 details with a correlation ID and
+never expose stack traces or raw dependency errors.
 
 ## Quality and test commands
 
@@ -130,6 +167,7 @@ tests:
 
 ```bash
 pnpm infra:check
+pnpm --filter @claims-os/api test:infra
 ```
 
 ## Troubleshooting
@@ -141,6 +179,9 @@ pnpm infra:check
   `apps/api/.env.example`; errors never echo secret values.
 - If MinIO is healthy but the bucket is missing, inspect
   `docker compose logs minio-init` and rerun `pnpm infra:up`.
+- If readiness is HTTP 503, run `pnpm infra:status`, `pnpm infra:check`, and
+  inspect project-owned logs with `pnpm infra:logs`. The response intentionally
+  identifies only which dependency is down.
 - If local credentials were changed after volumes were created, use the
   previous credentials or intentionally reset local data with
   `pnpm infra:reset`.

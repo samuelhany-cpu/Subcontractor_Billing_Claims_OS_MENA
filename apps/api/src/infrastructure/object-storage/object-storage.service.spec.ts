@@ -16,7 +16,8 @@ describe('ObjectStorageService', () => {
     const send = jest
       .fn<Promise<Record<string, never>>, [unknown]>()
       .mockResolvedValue({});
-    const client = { send } as unknown as S3Client;
+    const destroy = jest.fn();
+    const client = { destroy, send } as unknown as S3Client;
     const signer = jest
       .fn<ReturnType<ObjectStorageSigner>, Parameters<ObjectStorageSigner>>()
       .mockResolvedValue(
@@ -28,7 +29,7 @@ describe('ObjectStorageService', () => {
       signer,
     );
 
-    return { send, signer, service };
+    return { destroy, send, signer, service };
   }
 
   it('checks private bucket availability', async () => {
@@ -94,5 +95,13 @@ describe('ObjectStorageService', () => {
     await expect(service.checkReadiness()).rejects.toEqual(
       new InfrastructureDependencyError('object-storage'),
     );
+  });
+
+  it('releases the S3 client during application shutdown', () => {
+    const { destroy, service } = createFixture();
+
+    service.onApplicationShutdown();
+
+    expect(destroy).toHaveBeenCalledTimes(1);
   });
 });

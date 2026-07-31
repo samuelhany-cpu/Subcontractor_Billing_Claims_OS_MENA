@@ -5,6 +5,7 @@ export const REDIS_CLIENT = Symbol('REDIS_CLIENT');
 
 export interface RedisClient {
   connect(): Promise<void>;
+  disconnect(reconnect?: boolean): void;
   ping(): Promise<string>;
   quit(): Promise<string>;
 }
@@ -12,10 +13,15 @@ export interface RedisClient {
 @Injectable()
 export class RedisService implements OnApplicationShutdown {
   private connected = false;
+  private closed = false;
 
   constructor(@Inject(REDIS_CLIENT) private readonly client: RedisClient) {}
 
   async connect(): Promise<void> {
+    if (this.closed) {
+      throw new InfrastructureDependencyError('redis');
+    }
+
     if (this.connected) {
       return;
     }
@@ -42,12 +48,20 @@ export class RedisService implements OnApplicationShutdown {
   }
 
   async disconnect(): Promise<void> {
-    if (!this.connected) {
+    if (this.closed) {
       return;
     }
 
-    await this.client.quit();
-    this.connected = false;
+    try {
+      if (this.connected) {
+        await this.client.quit();
+      } else {
+        this.client.disconnect(false);
+      }
+    } finally {
+      this.connected = false;
+      this.closed = true;
+    }
   }
 
   async onApplicationShutdown(): Promise<void> {

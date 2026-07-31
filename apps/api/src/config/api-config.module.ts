@@ -11,6 +11,8 @@ function readValidatedConfig(config: ConfigService): ApiRuntimeConfig {
     runtime: config.getOrThrow<ApiRuntimeConfig['runtime']>('runtime'),
     server: config.getOrThrow<ApiRuntimeConfig['server']>('server'),
     http: config.getOrThrow<ApiRuntimeConfig['http']>('http'),
+    diagnostics:
+      config.getOrThrow<ApiRuntimeConfig['diagnostics']>('diagnostics'),
     database: config.getOrThrow<ApiRuntimeConfig['database']>('database'),
     redis: config.getOrThrow<ApiRuntimeConfig['redis']>('redis'),
     objectStorage:

@@ -4,7 +4,10 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@prisma/client';
 import Redis from 'ioredis';
-import { parseApiEnvironment } from '../config/api-config';
+import {
+  RuntimeConfigurationError,
+  parseApiEnvironment,
+} from '../config/api-config';
 import { DatabaseService } from './database/database.service';
 import { ObjectStorageService } from './object-storage/object-storage.service';
 import { RedisService } from './redis/redis.service';
@@ -15,6 +18,7 @@ async function checkInfrastructure(): Promise<void> {
     adapter: new PrismaPg({ connectionString: config.database.url }),
   });
   const redisClient = new Redis(config.redis.url, {
+    connectTimeout: config.diagnostics.healthCheckTimeoutMs,
     enableOfflineQueue: false,
     lazyConnect: true,
     maxRetriesPerRequest: 1,
@@ -57,6 +61,8 @@ async function checkInfrastructure(): Promise<void> {
 }
 
 void checkInfrastructure().catch((error: unknown) => {
+  const configurationErrors =
+    error instanceof RuntimeConfigurationError ? error.fields : undefined;
   const dependency =
     error instanceof Error && 'dependency' in error
       ? String(error.dependency)
@@ -66,6 +72,7 @@ void checkInfrastructure().catch((error: unknown) => {
       dependencies: {
         [dependency]: 'unavailable',
       },
+      ...(configurationErrors === undefined ? {} : { configurationErrors }),
     }),
   );
   process.exitCode = 1;

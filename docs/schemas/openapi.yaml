@@ -8,6 +8,7 @@ servers:
 security:
   - bearerAuth: []
 tags:
+  - name: Health
   - name: Projects
   - name: Contracts
   - name: BOQ
@@ -18,6 +19,38 @@ tags:
   - name: Invoices
   - name: Payments
 paths:
+  /health/live:
+    get:
+      tags: [Health]
+      summary: Report API process liveness without checking dependencies
+      operationId: getLiveness
+      security: []
+      responses:
+        '200':
+          description: API process is alive
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Liveness'
+  /health/ready:
+    get:
+      tags: [Health]
+      summary: Report readiness of required runtime dependencies
+      operationId: getReadiness
+      security: []
+      responses:
+        '200':
+          description: All required dependencies are ready
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Readiness'
+        '503':
+          description: One or more required dependencies are unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Readiness'
   /projects:
     get:
       tags: [Projects]
@@ -269,6 +302,36 @@ components:
           schema:
             $ref: '#/components/schemas/Problem'
   schemas:
+    Liveness:
+      type: object
+      required: [status, service, timestamp]
+      additionalProperties: false
+      properties:
+        status: {type: string, enum: [ok]}
+        service: {type: string, example: claims-os-api}
+        timestamp: {type: string, format: date-time}
+    ReadinessCheck:
+      type: object
+      required: [status]
+      additionalProperties: false
+      properties:
+        status: {type: string, enum: [up, down]}
+    Readiness:
+      type: object
+      required: [status, service, timestamp, checks]
+      additionalProperties: false
+      properties:
+        status: {type: string, enum: [ready, not_ready]}
+        service: {type: string, example: claims-os-api}
+        timestamp: {type: string, format: date-time}
+        checks:
+          type: object
+          required: [postgresql, redis, objectStorage]
+          additionalProperties: false
+          properties:
+            postgresql: {$ref: '#/components/schemas/ReadinessCheck'}
+            redis: {$ref: '#/components/schemas/ReadinessCheck'}
+            objectStorage: {$ref: '#/components/schemas/ReadinessCheck'}
     Money:
       type: object
       required: [amount, currency]
@@ -393,6 +456,7 @@ components:
         status: {type: integer}
         code: {type: string}
         detail: {type: string}
+        correlationId: {type: string, maxLength: 128}
         errors:
           type: array
           items:

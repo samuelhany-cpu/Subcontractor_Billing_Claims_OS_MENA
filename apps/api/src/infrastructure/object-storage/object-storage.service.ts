@@ -7,7 +7,7 @@ import {
   S3Client,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnApplicationShutdown } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { InfrastructureDependencyError } from '../infrastructure-error';
 
@@ -39,7 +39,9 @@ export interface PrivateObjectStorage {
 }
 
 @Injectable()
-export class ObjectStorageService implements PrivateObjectStorage {
+export class ObjectStorageService
+  implements PrivateObjectStorage, OnApplicationShutdown
+{
   constructor(
     private readonly client: S3Client,
     private readonly bucket: string,
@@ -127,6 +129,10 @@ export class ObjectStorageService implements PrivateObjectStorage {
     } catch {
       throw new InfrastructureDependencyError('object-storage');
     }
+  }
+
+  onApplicationShutdown(): void {
+    this.client.destroy();
   }
 
   private normalizeNamespace(namespace: string): string {

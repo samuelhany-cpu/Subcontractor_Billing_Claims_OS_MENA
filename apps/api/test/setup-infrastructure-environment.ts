@@ -1,0 +1,23 @@
+Object.assign(process.env, {
+  NODE_ENV: 'test',
+  SERVICE_NAME: 'claims-os-api',
+  API_HOST: '127.0.0.1',
+  API_PORT: '4002',
+  API_PUBLIC_URL: 'http://localhost:4002',
+  WEB_URL: 'http://localhost:3000',
+  CORS_ORIGINS: 'http://localhost:3000',
+  LOG_LEVEL: 'error',
+  LOG_FORMAT: 'json',
+  REQUEST_LOGGING: 'true',
+  HEALTH_CHECK_TIMEOUT_MS: '2000',
+  DATABASE_URL:
+    'postgresql://claims_local:claims_local_password@127.0.0.1:55432/claims_os',
+  REDIS_URL: 'redis://:claims_local_redis_password@127.0.0.1:6379/0',
+  OBJECT_STORAGE_ENDPOINT: 'http://127.0.0.1:9000',
+  OBJECT_STORAGE_REGION: 'us-east-1',
+  OBJECT_STORAGE_BUCKET: 'claims-documents-local',
+  OBJECT_STORAGE_ACCESS_KEY: 'claims_local_minio',
+  OBJECT_STORAGE_SECRET_KEY: 'claims_local_minio_secret',
+  OBJECT_STORAGE_SECURE: 'false',
+  OBJECT_STORAGE_FORCE_PATH_STYLE: 'true',
+});

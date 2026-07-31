@@ -8,12 +8,16 @@ import {
 
 const validEnvironment = {
   NODE_ENV: 'test',
+  SERVICE_NAME: 'claims-os-api',
   API_HOST: '127.0.0.1',
   API_PORT: '4001',
   API_PUBLIC_URL: 'http://localhost:4001',
   WEB_URL: 'http://localhost:3000',
   CORS_ORIGINS: 'http://localhost:3000,https://review.example.test',
   LOG_LEVEL: 'error',
+  LOG_FORMAT: 'json',
+  REQUEST_LOGGING: 'true',
+  HEALTH_CHECK_TIMEOUT_MS: '1000',
   DATABASE_URL:
     'postgresql://claims_local:claims_local_password@localhost:55432/claims_os',
   REDIS_URL: 'redis://:claims_local_redis_password@localhost:6379/0',
@@ -43,6 +47,12 @@ describe('parseApiEnvironment', () => {
     const config = parseApiEnvironment(validEnvironment);
 
     expect(config.server.port).toBe(4001);
+    expect(config.runtime).toMatchObject({
+      serviceName: 'claims-os-api',
+      logFormat: 'json',
+      requestLogging: true,
+    });
+    expect(config.diagnostics.healthCheckTimeoutMs).toBe(1000);
     expect(config.objectStorage.secure).toBe(false);
     expect(config.objectStorage.forcePathStyle).toBe(true);
     expect(config.http.corsOrigins).toEqual([
@@ -58,6 +68,9 @@ describe('parseApiEnvironment', () => {
       API_HOST: undefined,
       API_PORT: undefined,
       LOG_LEVEL: undefined,
+      LOG_FORMAT: undefined,
+      REQUEST_LOGGING: undefined,
+      HEALTH_CHECK_TIMEOUT_MS: undefined,
       OBJECT_STORAGE_REGION: undefined,
       OBJECT_STORAGE_FORCE_PATH_STYLE: undefined,
       OBJECT_STORAGE_SECURE: undefined,
@@ -68,6 +81,9 @@ describe('parseApiEnvironment', () => {
       port: 4000,
     });
     expect(config.runtime.logLevel).toBe('info');
+    expect(config.runtime.logFormat).toBe('json');
+    expect(config.runtime.requestLogging).toBe(true);
+    expect(config.diagnostics.healthCheckTimeoutMs).toBe(1000);
     expect(config.objectStorage).toMatchObject({
       region: 'us-east-1',
       secure: false,
@@ -83,6 +99,10 @@ describe('parseApiEnvironment', () => {
     [{ OBJECT_STORAGE_SECRET_KEY: '' }, 'OBJECT_STORAGE_SECRET_KEY'],
     [{ API_PORT: '70000' }, 'API_PORT'],
     [{ OBJECT_STORAGE_SECURE: 'yes' }, 'OBJECT_STORAGE_SECURE'],
+    [{ REQUEST_LOGGING: 'yes' }, 'REQUEST_LOGGING'],
+    [{ HEALTH_CHECK_TIMEOUT_MS: '49' }, 'HEALTH_CHECK_TIMEOUT_MS'],
+    [{ HEALTH_CHECK_TIMEOUT_MS: '10001' }, 'HEALTH_CHECK_TIMEOUT_MS'],
+    [{ SERVICE_NAME: 'Claims OS API' }, 'SERVICE_NAME'],
     [
       {
         OBJECT_STORAGE_ENDPOINT: 'http://localhost:9000',
@@ -96,6 +116,23 @@ describe('parseApiEnvironment', () => {
 
   it('rejects local development defaults in production', () => {
     expectInvalid({ NODE_ENV: 'production' }, 'DATABASE_URL');
+  });
+
+  it('rejects pretty logs in production before runtime startup', () => {
+    expectInvalid(
+      {
+        NODE_ENV: 'production',
+        LOG_FORMAT: 'pretty',
+        DATABASE_URL:
+          'postgresql://production_user@database.example.test/claims',
+        REDIS_URL: 'rediss://production_user@redis.example.test/0',
+        OBJECT_STORAGE_ENDPOINT: 'https://storage.example.test',
+        OBJECT_STORAGE_ACCESS_KEY: 'production_access',
+        OBJECT_STORAGE_SECRET_KEY: 'production_secret',
+        OBJECT_STORAGE_SECURE: 'true',
+      },
+      'LOG_FORMAT',
+    );
   });
 
   it('rejects a local Redis default in an otherwise remote production configuration', () => {

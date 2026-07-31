@@ -17,6 +17,11 @@ const portString = z
   .regex(/^[0-9]+$/, 'must be an integer between 1 and 65535')
   .transform(Number)
   .pipe(z.number().int().min(1).max(65535));
+const boundedMillisecondsString = z
+  .string()
+  .regex(/^[0-9]+$/, 'must be an integer between 50 and 10000')
+  .transform(Number)
+  .pipe(z.number().int().min(50).max(10_000));
 const booleanString = z
   .enum(['true', 'false'], {
     error: 'must be either true or false',
@@ -38,6 +43,12 @@ const rawEnvironmentSchema = z
     NODE_ENV: z
       .enum(['development', 'test', 'production'])
       .default('development'),
+    SERVICE_NAME: nonEmptyString
+      .regex(
+        /^[a-z0-9][a-z0-9-]{1,62}[a-z0-9]$/,
+        'must be a lowercase service identifier',
+      )
+      .default('claims-os-api'),
     API_HOST: nonEmptyString.default('127.0.0.1'),
     API_PORT: portString.default(4000),
     API_PUBLIC_URL: urlString,
@@ -61,6 +72,9 @@ const rawEnvironmentSchema = z
     LOG_LEVEL: z
       .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace'])
       .default('info'),
+    LOG_FORMAT: z.enum(['json', 'pretty']).default('json'),
+    REQUEST_LOGGING: booleanString.default(true),
+    HEALTH_CHECK_TIMEOUT_MS: boundedMillisecondsString.default(1_000),
     DATABASE_URL: connectionUrl(['postgres:', 'postgresql:'], 'DATABASE_URL'),
     REDIS_URL: connectionUrl(['redis:', 'rediss:'], 'REDIS_URL'),
     OBJECT_STORAGE_ENDPOINT: connectionUrl(
@@ -99,6 +113,14 @@ const rawEnvironmentSchema = z
 
     if (environment.NODE_ENV !== 'production') {
       return;
+    }
+
+    if (environment.LOG_FORMAT !== 'json') {
+      context.addIssue({
+        code: 'custom',
+        path: ['LOG_FORMAT'],
+        message: 'must be json in production',
+      });
     }
 
     let databaseUrl: URL;
@@ -167,7 +189,10 @@ const rawEnvironmentSchema = z
 export interface ApiRuntimeConfig {
   readonly runtime: {
     readonly environment: 'development' | 'test' | 'production';
+    readonly serviceName: string;
     readonly logLevel: 'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace';
+    readonly logFormat: 'json' | 'pretty';
+    readonly requestLogging: boolean;
   };
   readonly server: {
     readonly host: string;
@@ -177,6 +202,9 @@ export interface ApiRuntimeConfig {
   readonly http: {
     readonly webUrl: string;
     readonly corsOrigins: readonly string[];
+  };
+  readonly diagnostics: {
+    readonly healthCheckTimeoutMs: number;
   };
   readonly database: {
     readonly url: string;
@@ -241,7 +269,10 @@ export function parseApiEnvironment(
   return Object.freeze({
     runtime: Object.freeze({
       environment: value.NODE_ENV,
+      serviceName: value.SERVICE_NAME,
       logLevel: value.LOG_LEVEL,
+      logFormat: value.LOG_FORMAT,
+      requestLogging: value.REQUEST_LOGGING,
     }),
     server: Object.freeze({
       host: value.API_HOST,
@@ -251,6 +282,9 @@ export function parseApiEnvironment(
     http: Object.freeze({
       webUrl: value.WEB_URL,
       corsOrigins: Object.freeze([...value.CORS_ORIGINS]),
+    }),
+    diagnostics: Object.freeze({
+      healthCheckTimeoutMs: value.HEALTH_CHECK_TIMEOUT_MS,
     }),
     database: Object.freeze({ url: value.DATABASE_URL }),
     redis: Object.freeze({ url: value.REDIS_URL }),
@@ -273,6 +307,7 @@ export function redactApiRuntimeConfig(
     runtime: config.runtime,
     server: config.server,
     http: config.http,
+    diagnostics: config.diagnostics,
     database: { url: REDACTED_VALUE },
     redis: { url: REDACTED_VALUE },
     objectStorage: {

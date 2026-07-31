@@ -1,11 +1,15 @@
 Object.assign(process.env, {
   NODE_ENV: 'test',
+  SERVICE_NAME: 'claims-os-api',
   API_HOST: '127.0.0.1',
   API_PORT: '4001',
   API_PUBLIC_URL: 'http://localhost:4001',
   WEB_URL: 'http://localhost:3000',
   CORS_ORIGINS: 'http://localhost:3000',
   LOG_LEVEL: 'error',
+  LOG_FORMAT: 'json',
+  REQUEST_LOGGING: 'true',
+  HEALTH_CHECK_TIMEOUT_MS: '1000',
   DATABASE_URL:
     'postgresql://test_user:test_password@127.0.0.1:55432/claims_test',
   REDIS_URL: 'redis://:test_password@127.0.0.1:6379/0',
