@@ -1,0 +1,48 @@
+{
+  "createProject": {
+    "name": "فيلا العبور",
+    "openingBalance": "50000.00",
+    "openingBalanceDate": "2026-06-27"
+  },
+  "createExpenseManual": {
+    "projectId": "00000000-0000-0000-0000-000000000001",
+    "expenseDate": "2026-07-31",
+    "description": "دفعة للكهربائي",
+    "categoryId": "00000000-0000-0000-0000-000000000010",
+    "subcategoryId": "00000000-0000-0000-0000-000000000011",
+    "payeeId": "00000000-0000-0000-0000-000000000020",
+    "amount": "10000.00",
+    "paymentMethod": "نقدي",
+    "source": "WEB"
+  },
+  "createExpenseCalculated": {
+    "projectId": "00000000-0000-0000-0000-000000000001",
+    "expenseDate": "2026-07-31",
+    "description": "طوب أسمنتي",
+    "categoryId": "00000000-0000-0000-0000-000000000012",
+    "quantity": "40.0000",
+    "unit": "ألف طوبة",
+    "unitPrice": "2250.0000",
+    "amount": "90000.00",
+    "source": "WEB"
+  },
+  "createTransfer": {
+    "projectId": "00000000-0000-0000-0000-000000000001",
+    "transferDate": "2026-07-31",
+    "amount": "100000.00",
+    "source": "WEB"
+  },
+  "automationDraft": {
+    "telegramChatId": "OWNER_CHAT_ID",
+    "telegramMsgId": "12345",
+    "intent": "ADD_EXPENSE",
+    "payload": {
+      "projectName": "فيلا العبور",
+      "expenseDate": "2026-07-31",
+      "description": "دفعة للكهربائي",
+      "amount": "10000.00",
+      "categoryName": "أعمال"
+    },
+    "idempotencyKey": "telegram:OWNER_CHAT_ID:12345:ADD_EXPENSE:v1"
+  }
+}

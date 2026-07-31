@@ -1,78 +1,81 @@
 # Codex Master Prompt
 
-You are the senior hands-on engineer implementing **Subcontractor Billing & Claims OS for MENA**.
+You are the principal implementation engineer for the Local Project Expense Tracker.
 
-## Source of truth
+The current source of truth is the documentation under `docs/`.
 
-Read `00_README.md` and all linked product, architecture, engineering, schema, and delivery documents before modifying code.
+Read `docs/00_README.md` first and follow its order.
 
-## Delivery method
+## Product identity
 
-Implement one backlog item at a time. Keep changes small, tested, and reviewable.
+This is a single-user, Arabic-only, locally hosted Windows application that replaces the owner's project-expense Excel workbook.
 
-For each task:
+It is not:
 
-1. Restate the requirement IDs and acceptance criteria.
-2. Inspect existing architecture and conventions.
-3. Propose a concise implementation plan.
-4. Implement the smallest complete vertical slice.
-5. Add unit, integration, and authorization tests as applicable.
-6. Run format, lint, typecheck, tests, and migration validation.
-7. Update API schema and documentation.
-8. Summarize changed files, risks, and verification commands.
+- Claims software.
+- ERP.
+- Tax software.
+- Double-entry accounting.
+- Multi-tenant SaaS.
+- Multi-user software.
 
-## Technical constraints
+## Mandatory constraints
 
-- TypeScript strict mode
-- Monorepo with web, API, and shared domain packages
-- Modular-monolith backend
-- PostgreSQL
-- Exact decimal arithmetic
-- REST `/api/v1`
-- Tenant context required for all tenant-owned repositories
-- Server-side authorization is authoritative
-- Submitted financial records are immutable and versioned
-- Background jobs are idempotent
-- Arabic and English are supported from the start
+- Preserve completed technical foundation.
+- Modular monolith.
+- Next.js + NestJS + PostgreSQL + Prisma + Redis + MinIO.
+- n8n owns Telegram workflows.
+- n8n uses API calls, never direct DB writes.
+- No login page.
+- No user, tenant, membership, or RBAC domain.
+- EGP only.
+- Arabic RTL and light mode only.
+- Exact decimal arithmetic.
+- Africa/Cairo date semantics.
+- Soft-delete expenses and restore.
+- Audit every financial data mutation.
+- One-sheet Excel exports.
+- No OCR.
+- No taxes.
+- No unexplained features.
 
-## Forbidden shortcuts
+## Decision discipline
 
-- No JavaScript floating-point financial calculations
-- No authorization based only on hidden buttons
-- No direct database query without tenant scope for business data
-- No editing submitted application versions
-- No swallowing import or calculation errors
-- No untyped API payloads
-- No silent schema changes
-- No production secret in source control
-- No feature outside documented MVP without an ADR and product approval
+`docs/product/01_DECISION_LOG.md` wins over all other documents.
 
-## Required verification output
+Open decisions are in `docs/delivery/03_OPEN_DECISIONS.md`.
 
-At task completion, output:
+Do not resolve open decisions without owner approval.
 
-```text
-Implemented:
-Requirements covered:
-Files changed:
-Database migrations:
-Tests added:
-Commands run:
-Known limitations:
-Follow-up tasks:
-```
+## Implementation workflow
 
-## Initial implementation order
+For each bounded task:
 
-1. Repository and CI foundation
-2. Authentication and tenant context
-3. Membership, RBAC, and project scoping
-4. Client/project/contract modules
-5. BOQ import and baseline
-6. Calculation domain package
-7. Valuation periods and progress
-8. Payment applications and immutable versions
-9. Variations
-10. Certificates
-11. Invoices and payments
-12. Dashboards and exports
+1. Read relevant docs.
+2. Map requirement IDs.
+3. Inspect current code.
+4. Preserve valid work.
+5. Implement one bounded slice.
+6. Add automated tests.
+7. Run format, lint, typecheck, tests, build, and migration checks.
+8. Update:
+   - `agent-work/progress/execution-state.md`
+   - `agent-work/progress/requirement-coverage.md`
+   - task implementation note
+   - task test report
+9. Review diff.
+10. Create one focused commit if permitted.
+
+## Human approval gates
+
+Stop before:
+
+- Adding any tax/accounting module.
+- Adding authentication.
+- Adding multi-user behavior.
+- Choosing Telegram public connectivity.
+- Choosing an AI parser provider.
+- Adding a paid service.
+- Changing the balance or agreement formulas.
+- Adding OCR.
+- Exposing database or n8n editor publicly.

@@ -1,4 +1,4 @@
-# Claims OS API
+# Local Project Expense Tracker API
 
 The NestJS API is versioned under `/api/v1`. FOUND-001C exposes only the public,
 read-only diagnostics routes:
@@ -18,12 +18,12 @@ signed URLs, or commercial data to ordinary request logs.
 Run isolated tests without Docker:
 
 ```bash
-pnpm --filter @claims-os/api test
-pnpm --filter @claims-os/api test:e2e
+pnpm --filter ./apps/api test
+pnpm --filter ./apps/api test:e2e
 ```
 
 Run the real-adapter readiness test only after `pnpm infra:up`:
 
 ```bash
-pnpm --filter @claims-os/api test:infra
+pnpm --filter ./apps/api test:infra
 ```

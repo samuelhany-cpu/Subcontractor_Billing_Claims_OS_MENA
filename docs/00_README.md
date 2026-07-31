@@ -1,91 +1,91 @@
-# Subcontractor Billing & Claims OS for MENA
+# Local Project Expense Tracker — Documentation Pack
 
-## AI Development Pack
+## Purpose
 
-This repository-ready documentation pack defines the product, MVP scope, architecture, data model, APIs, security baseline, delivery backlog, and execution instructions for Claude and Codex.
+This repository documents a **single-user, Arabic-only, locally hosted application** that replaces the current project-expense Excel workbook.
 
-## Product statement
+The product manages:
 
-A bilingual Arabic/English SaaS platform that helps subcontractors and specialist contractors prepare payment applications, manage variations and claims evidence, track certifications and collections, monitor retention and advance recovery, and forecast project cash flow.
+- Multiple projects.
+- Project expenses.
+- Incoming project transfers.
+- Opening balances.
+- Suppliers, craftsmen, workers, and companies.
+- One agreement total per payee per project.
+- Paid and remaining amounts.
+- Daily, weekly, monthly, and custom-period reports.
+- One-sheet Excel exports.
+- Excel imports, including the current legacy workbook.
+- Optional invoice/receipt images.
+- Telegram interaction through n8n.
+- Recycle bin and change history.
+- Daily backup to Google Drive.
 
-## Primary customer
+## Explicitly excluded
 
-MENA subcontractors and specialist contractors managing multiple active projects and relying on Excel, PDFs, email, and WhatsApp to prepare and collect monthly payments.
+- Taxes.
+- Electronic invoicing.
+- Claims and payment applications.
+- Double-entry accounting.
+- General ledger.
+- Branches.
+- Multiple users.
+- Login page.
+- Roles and permissions.
+- Payroll.
+- Inventory.
+- Procurement.
+- Dark mode.
+- OCR of invoice images.
+- Public cloud hosting.
 
-## MVP promise
+## Existing foundation to preserve
 
-> Convert contract BOQ progress into a complete payment application, track it through review and certification, and show what is expected to be collected, delayed, retained, or at risk.
+The current implementation foundation is reusable:
 
-## Read order for AI agents
+- pnpm/Turborepo monorepo.
+- Next.js web app.
+- NestJS API.
+- PostgreSQL.
+- Redis.
+- MinIO / S3-compatible storage.
+- Docker Compose.
+- Typed environment configuration.
+- CI, lint, typecheck, tests, and builds.
+- Health, readiness, correlation, and logging if already completed.
 
-1. `product/01_PRODUCT_VISION.md`
-2. `product/02_BRD.md`
-3. `product/03_PRD_MVP.md`
-4. `product/04_SCOPE_AND_NON_GOALS.md`
-5. `product/05_PERSONAS_AND_JTBD.md`
-6. `product/06_WORKFLOWS_AND_STATE_MACHINES.md`
-7. `architecture/01_SYSTEM_ARCHITECTURE.md`
-8. `architecture/02_DATA_MODEL.md`
-9. `architecture/03_RBAC_AND_TENANCY.md`
-10. `schemas/database_schema.sql`
-11. `schemas/openapi.yaml`
-12. `engineering/01_ENGINEERING_STANDARDS.md`
-13. `engineering/02_SECURITY_AND_PRIVACY.md`
-14. `engineering/03_TEST_STRATEGY.md`
-15. `delivery/01_RELEASE_PLAN_AND_BACKLOG.md`
-16. `prompts/CLAUDE_MASTER_PROMPT.md` or `prompts/CODEX_MASTER_PROMPT.md`
+## Document reading order
 
-## Required implementation discipline
+1. `product/01_DECISION_LOG.md`
+2. `source-analysis/01_SOURCE_WORKBOOK_ANALYSIS.md`
+3. `product/02_PRODUCT_VISION.md`
+4. `product/03_SCOPE.md`
+5. `product/04_PRD.md`
+6. `product/05_FUNCTIONAL_REQUIREMENTS.md`
+7. `product/06_BUSINESS_RULES.md`
+8. `product/07_USER_FLOWS.md`
+9. `product/08_INFORMATION_ARCHITECTURE.md`
+10. `product/09_UI_SPEC.md`
+11. `architecture/01_SYSTEM_ARCHITECTURE.md`
+12. `architecture/02_DATA_MODEL.md`
+13. `schemas/schema.prisma`
+14. `schemas/openapi.yaml`
+15. `integrations/01_N8N_TELEGRAM_SPEC.md`
+16. `integrations/02_EXCEL_IMPORT_EXPORT_SPEC.md`
+17. `integrations/03_BACKUP_GOOGLE_DRIVE_SPEC.md`
+18. `integrations/04_N8N_WORKFLOW_BLUEPRINT.md`
+19. `engineering/01_SECURITY_AND_LOCAL_NETWORK.md`
+20. `engineering/02_TEST_STRATEGY.md`
+21. `engineering/03_ACCEPTANCE_CRITERIA.md`
+22. `engineering/04_WINDOWS_LOCAL_DEPLOYMENT.md`
+23. `delivery/01_BACKLOG.md`
+24. `delivery/02_PIVOT_MIGRATION_PLAN.md`
+25. `delivery/03_OPEN_DECISIONS.md`
+26. `prompts/CODEX_MASTER_PROMPT.md`
+27. `prompts/FIRST_CODEX_TASK.md`
 
-- Do not expand MVP scope without recording an Architecture Decision Record.
-- Treat money, percentages, tax, retention, and progress calculations as deterministic domain logic with automated tests.
-- Every business row must be tenant-scoped.
-- Every material state change must be audit-logged.
-- Arabic RTL and English LTR are MVP requirements, not future enhancements.
-- Never use floating-point values for money.
-- Do not claim legal or contractual correctness; the product supports contract administration but does not adjudicate legal entitlement.
+## Source-of-truth rule
 
-## Repository shape
+If a document conflicts with the user decision log, the decision log wins.
 
-```text
-apps/
-  web/                 Next.js web application
-  api/                 NestJS modular-monolith API
-packages/
-  domain/              shared domain types and calculation rules
-  ui/                  shared design system
-  config/              eslint, typescript, prettier
-  test-utils/          fixtures and test helpers
-infra/
-  docker/
-  terraform/           optional after pilot
-  monitoring/
-docs/                  copy of this documentation pack
-```
-
-## MVP modules
-
-- Identity, organizations, memberships, and roles
-- Clients, projects, contracts, currencies, taxes, and terms
-- BOQ / Schedule of Values
-- Monthly progress measurement
-- Payment applications
-- Variation order register and evidence
-- Payment certificates
-- Commercial invoices and collections
-- Retention and advance-payment recovery
-- Documents, comments, approvals, notifications, and audit log
-- Cash-flow and aging dashboards
-- Arabic/English localization and export-ready reports
-
-## Non-MVP modules
-
-- Full accounting general ledger
-- Procurement and inventory
-- Payroll and HR
-- Primavera/MS Project scheduling
-- BIM authoring
-- Government tax submission
-- Banking integration
-- Dispute adjudication or legal advice
-- AI-generated legal claims
+Codex must not invent product features or alter financial formulas without updating the decision log and receiving user approval.

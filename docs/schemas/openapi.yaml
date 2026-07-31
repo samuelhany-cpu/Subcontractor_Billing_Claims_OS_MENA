@@ -1,467 +1,337 @@
-openapi: 3.0.3
+openapi: 3.1.0
 info:
-  title: Subcontractor Billing & Claims OS API
-  version: 0.1.0
-  description: MVP REST API contract. Expand endpoint schemas during implementation.
+  title: Local Project Expense Tracker API
+  version: 1.0.0
 servers:
   - url: /api/v1
-security:
-  - bearerAuth: []
-tags:
-  - name: Health
-  - name: Projects
-  - name: Contracts
-  - name: BOQ
-  - name: Progress
-  - name: Applications
-  - name: Variations
-  - name: Certificates
-  - name: Invoices
-  - name: Payments
 paths:
-  /health/live:
-    get:
-      tags: [Health]
-      summary: Report API process liveness without checking dependencies
-      operationId: getLiveness
-      security: []
-      responses:
-        '200':
-          description: API process is alive
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Liveness'
-  /health/ready:
-    get:
-      tags: [Health]
-      summary: Report readiness of required runtime dependencies
-      operationId: getReadiness
-      security: []
-      responses:
-        '200':
-          description: All required dependencies are ready
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Readiness'
-        '503':
-          description: One or more required dependencies are unavailable
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Readiness'
   /projects:
     get:
-      tags: [Projects]
-      summary: List accessible projects
+      operationId: listProjects
+      parameters:
+        - in: query
+          name: status
+          schema: { type: string, enum: [ACTIVE, ARCHIVED] }
       responses:
-        '200':
-          description: Project page
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProjectPage'
+        "200": { description: Projects returned }
     post:
-      tags: [Projects]
-      summary: Create project
       operationId: createProject
       requestBody:
         required: true
         content:
           application/json:
-            schema:
-              $ref: '#/components/schemas/CreateProject'
+            schema: { $ref: "#/components/schemas/CreateProject" }
       responses:
-        '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Project'
+        "201": { description: Project created }
   /projects/{projectId}:
-    parameters:
-      - $ref: '#/components/parameters/ProjectId'
     get:
-      tags: [Projects]
-      summary: Get project
+      operationId: getProject
+      parameters: [ { $ref: "#/components/parameters/ProjectId" } ]
       responses:
-        '200':
-          description: Project
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Project'
-  /projects/{projectId}/contracts:
-    parameters:
-      - $ref: '#/components/parameters/ProjectId'
-    post:
-      tags: [Contracts]
-      summary: Create contract draft
+        "200": { description: Project returned }
+    patch:
+      operationId: updateProject
+      parameters: [ { $ref: "#/components/parameters/ProjectId" } ]
       requestBody:
         required: true
         content:
           application/json:
-            schema:
-              $ref: '#/components/schemas/CreateContract'
+            schema: { $ref: "#/components/schemas/UpdateProject" }
       responses:
-        '201':
-          description: Contract created
-  /contracts/{contractId}/boq-imports:
+        "200": { description: Project updated }
+  /projects/{projectId}/archive:
     post:
-      tags: [BOQ]
-      summary: Start BOQ import
+      operationId: archiveProject
+      parameters: [ { $ref: "#/components/parameters/ProjectId" } ]
+      responses:
+        "200": { description: Project archived }
+  /projects/{projectId}/restore:
+    post:
+      operationId: restoreProject
+      parameters: [ { $ref: "#/components/parameters/ProjectId" } ]
+      responses:
+        "200": { description: Project restored }
+  /projects/{projectId}/dashboard:
+    get:
+      operationId: getProjectDashboard
+      parameters: [ { $ref: "#/components/parameters/ProjectId" } ]
+      responses:
+        "200": { description: Dashboard returned }
+  /expenses:
+    get:
+      operationId: listExpenses
       parameters:
-        - $ref: '#/components/parameters/ContractId'
-        - $ref: '#/components/parameters/IdempotencyKey'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [documentId, mapping]
-              properties:
-                documentId: {type: string, format: uuid}
-                mapping: {type: object, additionalProperties: true}
+        - in: query
+          name: projectId
+          required: true
+          schema: { type: string, format: uuid }
+        - in: query
+          name: from
+          schema: { type: string, format: date }
+        - in: query
+          name: to
+          schema: { type: string, format: date }
+        - in: query
+          name: categoryId
+          schema: { type: string, format: uuid }
+        - in: query
+          name: payeeId
+          schema: { type: string, format: uuid }
+        - in: query
+          name: search
+          schema: { type: string }
       responses:
-        '202':
-          description: Import job accepted
-  /contracts/{contractId}/valuation-periods:
+        "200": { description: Expenses returned }
     post:
-      tags: [Progress]
-      summary: Create valuation period
-      parameters:
-        - $ref: '#/components/parameters/ContractId'
+      operationId: createExpense
       requestBody:
         required: true
         content:
           application/json:
-            schema:
-              $ref: '#/components/schemas/CreateValuationPeriod'
+            schema: { $ref: "#/components/schemas/ExpenseInput" }
       responses:
-        '201': {description: Created}
-  /valuation-periods/{periodId}/progress:
+        "201": { description: Expense created }
+  /expenses/{expenseId}:
+    patch:
+      operationId: updateExpense
+      parameters: [ { $ref: "#/components/parameters/ExpenseId" } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ExpenseInput" }
+      responses:
+        "200": { description: Expense updated }
+    delete:
+      operationId: deleteExpense
+      parameters: [ { $ref: "#/components/parameters/ExpenseId" } ]
+      responses:
+        "204": { description: Expense moved to recycle bin }
+  /expenses/{expenseId}/restore:
+    post:
+      operationId: restoreExpense
+      parameters: [ { $ref: "#/components/parameters/ExpenseId" } ]
+      responses:
+        "200": { description: Expense restored }
+  /transfers:
+    get:
+      operationId: listTransfers
+      parameters:
+        - in: query
+          name: projectId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200": { description: Transfers returned }
+    post:
+      operationId: createTransfer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TransferInput" }
+      responses:
+        "201": { description: Transfer created }
+  /payees:
+    get:
+      operationId: listPayees
+      responses:
+        "200": { description: Payees returned }
+    post:
+      operationId: createPayee
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PayeeInput" }
+      responses:
+        "201": { description: Payee created }
+  /projects/{projectId}/payees/{payeeId}/agreement:
     put:
-      tags: [Progress]
-      summary: Upsert progress entries
+      operationId: upsertAgreement
       parameters:
-        - name: periodId
-          in: path
-          required: true
-          schema: {type: string, format: uuid}
+        - { $ref: "#/components/parameters/ProjectId" }
+        - { $ref: "#/components/parameters/PayeeId" }
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [entries]
+              required: [totalAmount]
               properties:
-                entries:
-                  type: array
-                  items:
-                    $ref: '#/components/schemas/ProgressEntryInput'
+                totalAmount: { $ref: "#/components/schemas/Money" }
+                notes: { type: [string, "null"] }
       responses:
-        '200': {description: Progress saved}
-  /valuation-periods/{periodId}/applications:
-    post:
-      tags: [Applications]
-      summary: Create payment application draft
-      parameters:
-        - name: periodId
-          in: path
-          required: true
-          schema: {type: string, format: uuid}
-        - $ref: '#/components/parameters/IdempotencyKey'
-      responses:
-        '201':
-          description: Application draft
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaymentApplication'
-  /applications/{applicationId}/validate:
-    post:
-      tags: [Applications]
-      summary: Validate application for submission
-      parameters:
-        - $ref: '#/components/parameters/ApplicationId'
-      responses:
-        '200':
-          description: Validation result
-  /applications/{applicationId}/submit:
-    post:
-      tags: [Applications]
-      summary: Submit immutable application version
-      parameters:
-        - $ref: '#/components/parameters/ApplicationId'
-        - $ref: '#/components/parameters/IdempotencyKey'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                comment: {type: string}
-      responses:
-        '200': {description: Submitted}
-        '422': {$ref: '#/components/responses/ValidationProblem'}
-  /projects/{projectId}/variations:
-    parameters:
-      - $ref: '#/components/parameters/ProjectId'
+        "200": { description: Agreement saved }
+  /reports/expenses.xlsx:
     get:
-      tags: [Variations]
-      summary: List variations
-      responses:
-        '200': {description: Variation page}
-    post:
-      tags: [Variations]
-      summary: Create variation
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateVariation'
-      responses:
-        '201': {description: Created}
-  /applications/{applicationId}/certificates:
-    post:
-      tags: [Certificates]
-      summary: Record certificate
+      operationId: exportExpensesExcel
       parameters:
-        - $ref: '#/components/parameters/ApplicationId'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateCertificate'
-      responses:
-        '201': {description: Created}
-  /certificates/{certificateId}/invoices:
-    post:
-      tags: [Invoices]
-      summary: Create invoice from certificate
-      parameters:
-        - name: certificateId
-          in: path
+        - in: query
+          name: projectId
           required: true
-          schema: {type: string, format: uuid}
-        - $ref: '#/components/parameters/IdempotencyKey'
+          schema: { type: string, format: uuid }
+        - in: query
+          name: from
+          required: true
+          schema: { type: string, format: date }
+        - in: query
+          name: to
+          required: true
+          schema: { type: string, format: date }
       responses:
-        '201': {description: Invoice created}
-  /payments:
+        "200":
+          description: Excel workbook
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: { type: string, format: binary }
+  /imports/excel/preview:
     post:
-      tags: [Payments]
-      summary: Record and allocate payment
+      operationId: previewExcelImport
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [projectId, file]
+              properties:
+                projectId: { type: string, format: uuid }
+                file: { type: string, format: binary }
+      responses:
+        "200": { description: Import preview }
+  /imports/excel/{importJobId}/commit:
+    post:
+      operationId: commitExcelImport
       parameters:
-        - $ref: '#/components/parameters/IdempotencyKey'
+        - in: path
+          name: importJobId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200": { description: Import committed }
+  /automation/drafts:
+    post:
+      operationId: createAutomationDraft
       requestBody:
         required: true
         content:
           application/json:
-            schema:
-              $ref: '#/components/schemas/CreatePayment'
+            schema: { $ref: "#/components/schemas/AutomationDraftInput" }
       responses:
-        '201': {description: Payment recorded}
+        "201": { description: Draft created }
+  /automation/drafts/{draftId}/confirm:
+    post:
+      operationId: confirmAutomationDraft
+      parameters:
+        - in: path
+          name: draftId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200": { description: Draft confirmed idempotently }
+  /automation/drafts/{draftId}/cancel:
+    post:
+      operationId: cancelAutomationDraft
+      parameters:
+        - in: path
+          name: draftId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200": { description: Draft cancelled }
 components:
-  securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
   parameters:
     ProjectId:
+      in: path
       name: projectId
+      required: true
+      schema: { type: string, format: uuid }
+    ExpenseId:
       in: path
+      name: expenseId
       required: true
-      schema: {type: string, format: uuid}
-    ContractId:
-      name: contractId
+      schema: { type: string, format: uuid }
+    PayeeId:
       in: path
+      name: payeeId
       required: true
-      schema: {type: string, format: uuid}
-    ApplicationId:
-      name: applicationId
-      in: path
-      required: true
-      schema: {type: string, format: uuid}
-    IdempotencyKey:
-      name: Idempotency-Key
-      in: header
-      required: true
-      schema: {type: string, maxLength: 128}
-  responses:
-    ValidationProblem:
-      description: Business validation failed
-      content:
-        application/problem+json:
-          schema:
-            $ref: '#/components/schemas/Problem'
+      schema: { type: string, format: uuid }
   schemas:
-    Liveness:
-      type: object
-      required: [status, service, timestamp]
-      additionalProperties: false
-      properties:
-        status: {type: string, enum: [ok]}
-        service: {type: string, example: claims-os-api}
-        timestamp: {type: string, format: date-time}
-    ReadinessCheck:
-      type: object
-      required: [status]
-      additionalProperties: false
-      properties:
-        status: {type: string, enum: [up, down]}
-    Readiness:
-      type: object
-      required: [status, service, timestamp, checks]
-      additionalProperties: false
-      properties:
-        status: {type: string, enum: [ready, not_ready]}
-        service: {type: string, example: claims-os-api}
-        timestamp: {type: string, format: date-time}
-        checks:
-          type: object
-          required: [postgresql, redis, objectStorage]
-          additionalProperties: false
-          properties:
-            postgresql: {$ref: '#/components/schemas/ReadinessCheck'}
-            redis: {$ref: '#/components/schemas/ReadinessCheck'}
-            objectStorage: {$ref: '#/components/schemas/ReadinessCheck'}
     Money:
-      type: object
-      required: [amount, currency]
-      properties:
-        amount:
-          type: string
-          pattern: '^-?[0-9]+(\\.[0-9]{1,4})?$'
-        currency:
-          type: string
-          minLength: 3
-          maxLength: 3
-    Project:
-      type: object
-      required: [id, reference, name, countryCode, currencyCode, status]
-      properties:
-        id: {type: string, format: uuid}
-        reference: {type: string}
-        name: {type: string}
-        countryCode: {type: string}
-        currencyCode: {type: string}
-        status: {type: string}
-    ProjectPage:
-      type: object
-      required: [items, total]
-      properties:
-        items:
-          type: array
-          items: {$ref: '#/components/schemas/Project'}
-        total: {type: integer}
+      type: string
+      pattern: '^\d+(\.\d{1,2})?$'
+      examples: ["10000.00"]
     CreateProject:
       type: object
-      required: [reference, name, countryCode, currencyCode, timezone]
+      required: [name]
       properties:
-        reference: {type: string}
-        name: {type: string}
-        clientId: {type: string, format: uuid}
-        countryCode: {type: string}
-        currencyCode: {type: string}
-        timezone: {type: string}
-        reportingLocale: {type: string, enum: [en, ar]}
-    CreateContract:
-      type: object
-      required: [reference, currencyCode]
-      properties:
-        reference: {type: string}
-        currencyCode: {type: string}
-        originalValue: {type: string}
-        retentionRate: {type: string}
-        retentionCapType: {type: string}
-        retentionCapValue: {type: string}
-        advanceAmount: {type: string}
-        advanceRecoveryMethod: {type: string}
-        advanceRecoveryRate: {type: string}
-        paymentTermDays: {type: integer}
-        taxRate: {type: string}
-    CreateValuationPeriod:
-      type: object
-      required: [periodNumber, dateFrom, dateTo]
-      properties:
-        periodNumber: {type: integer}
-        dateFrom: {type: string, format: date}
-        dateTo: {type: string, format: date}
-    ProgressEntryInput:
-      type: object
-      required: [boqItemId, currentQuantity]
-      properties:
-        boqItemId: {type: string, format: uuid}
-        currentQuantity: {type: string}
-        notes: {type: string}
-    PaymentApplication:
-      type: object
-      required: [id, applicationNumber, status]
-      properties:
-        id: {type: string, format: uuid}
-        applicationNumber: {type: integer}
-        status: {type: string}
-        currentVersionId: {type: string, format: uuid}
-    CreateVariation:
-      type: object
-      required: [reference, title, currencyCode]
-      properties:
-        reference: {type: string}
-        title: {type: string}
-        description: {type: string}
-        currencyCode: {type: string}
-        estimatedValue: {type: string}
-    CreateCertificate:
-      type: object
-      required: [currencyCode, netCertified]
-      properties:
-        certificateNumber: {type: string}
-        certificateDate: {type: string, format: date}
-        currencyCode: {type: string}
-        grossCertified: {type: string}
-        retentionCertified: {type: string}
-        advanceRecoveryCertified: {type: string}
-        otherDeductionsCertified: {type: string}
-        taxCertified: {type: string}
-        netCertified: {type: string}
-    CreatePayment:
-      type: object
-      required: [paymentDate, currencyCode, amount, allocations]
-      properties:
-        clientId: {type: string, format: uuid}
-        reference: {type: string}
-        paymentDate: {type: string, format: date}
-        currencyCode: {type: string}
-        amount: {type: string}
-        allocations:
-          type: array
-          items:
-            type: object
-            required: [invoiceId, amount]
-            properties:
-              invoiceId: {type: string, format: uuid}
-              amount: {type: string}
-    Problem:
+        name: { type: string, minLength: 1, maxLength: 200 }
+        openingBalance: { $ref: "#/components/schemas/Money" }
+        openingBalanceDate: { type: [string, "null"], format: date }
+    UpdateProject:
       type: object
       properties:
-        type: {type: string}
-        title: {type: string}
-        status: {type: integer}
-        code: {type: string}
-        detail: {type: string}
-        correlationId: {type: string, maxLength: 128}
-        errors:
-          type: array
-          items:
-            type: object
-            properties:
-              field: {type: string}
-              code: {type: string}
-              message: {type: string}
+        name: { type: string, minLength: 1, maxLength: 200 }
+        openingBalance: { $ref: "#/components/schemas/Money" }
+        openingBalanceDate: { type: [string, "null"], format: date }
+    ExpenseInput:
+      type: object
+      required: [projectId, expenseDate, description]
+      oneOf:
+        - required: [amount]
+        - required: [quantity, unitPrice]
+      properties:
+        projectId: { type: string, format: uuid }
+        expenseDate: { type: string, format: date }
+        description: { type: string, minLength: 1 }
+        categoryId: { type: [string, "null"], format: uuid }
+        subcategoryId: { type: [string, "null"], format: uuid }
+        payeeId: { type: [string, "null"], format: uuid }
+        invoiceNumber: { type: [string, "null"] }
+        quantity: { type: [string, "null"] }
+        unit: { type: [string, "null"] }
+        unitPrice: { type: [string, "null"] }
+        amount: { $ref: "#/components/schemas/Money" }
+        paymentMethod: { type: [string, "null"] }
+        notes: { type: [string, "null"] }
+        source: { type: string, enum: [WEB, TELEGRAM, EXCEL_IMPORT] }
+    TransferInput:
+      type: object
+      required: [projectId, transferDate, amount]
+      properties:
+        projectId: { type: string, format: uuid }
+        transferDate: { type: string, format: date }
+        amount: { $ref: "#/components/schemas/Money" }
+        source: { type: string, enum: [WEB, TELEGRAM, EXCEL_IMPORT] }
+    PayeeInput:
+      type: object
+      required: [name, type]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 200 }
+        type: { type: string, enum: [SUPPLIER, CRAFTSMAN, WORKER, COMPANY, OTHER] }
+        specialty: { type: [string, "null"] }
+        phone: { type: [string, "null"] }
+        companyName: { type: [string, "null"] }
+        notes: { type: [string, "null"] }
+    AutomationDraftInput:
+      type: object
+      required: [telegramChatId, intent, payload, idempotencyKey]
+      properties:
+        telegramChatId: { type: string }
+        telegramMsgId: { type: [string, "null"] }
+        intent:
+          type: string
+          enum:
+            - ADD_EXPENSE
+            - ADD_TRANSFER
+            - EDIT_LAST_EXPENSE
+            - DELETE_LAST_EXPENSE
+            - QUERY_TODAY_EXPENSES
+            - QUERY_WEEK_EXPENSES
+            - QUERY_BALANCE
+            - QUERY_PAYEE_TOTAL
+            - EXPORT_EXCEL
+        payload: { type: object, additionalProperties: true }
+        idempotencyKey: { type: string }

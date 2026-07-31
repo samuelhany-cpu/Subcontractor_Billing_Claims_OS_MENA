@@ -1,0 +1,304 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ProjectStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum PayeeType {
+  SUPPLIER
+  CRAFTSMAN
+  WORKER
+  COMPANY
+  OTHER
+}
+
+enum RecordSource {
+  WEB
+  TELEGRAM
+  EXCEL_IMPORT
+  SYSTEM
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  RESTORE
+  ARCHIVE
+  UNARCHIVE
+  IMPORT
+  EXPORT
+}
+
+enum AutomationIntent {
+  ADD_EXPENSE
+  ADD_TRANSFER
+  EDIT_LAST_EXPENSE
+  DELETE_LAST_EXPENSE
+  QUERY_TODAY_EXPENSES
+  QUERY_WEEK_EXPENSES
+  QUERY_BALANCE
+  QUERY_PAYEE_TOTAL
+  EXPORT_EXCEL
+}
+
+enum AutomationDraftStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  EXPIRED
+}
+
+enum ImportJobStatus {
+  PREVIEW
+  COMMITTED
+  FAILED
+}
+
+enum ImportRowStatus {
+  VALID
+  INVALID
+  SKIPPED
+  DUPLICATE
+  IMPORTED
+}
+
+model Project {
+  id                 String        @id @default(uuid()) @db.Uuid
+  name               String        @unique @db.VarChar(200)
+  status             ProjectStatus @default(ACTIVE)
+  openingBalance     Decimal       @default(0) @db.Decimal(18, 2)
+  openingBalanceDate DateTime?     @db.Date
+  archivedAt         DateTime?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  expenses   Expense[]
+  transfers  Transfer[]
+  agreements Agreement[]
+  importJobs ImportJob[]
+
+  @@index([status])
+}
+
+model Category {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @unique @db.VarChar(120)
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  subcategories Subcategory[]
+  expenses      Expense[]
+
+  @@index([isActive, sortOrder])
+}
+
+model Subcategory {
+  id         String   @id @default(uuid()) @db.Uuid
+  categoryId String   @db.Uuid
+  name       String   @db.VarChar(120)
+  sortOrder  Int      @default(0)
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  category Category  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  expenses Expense[]
+
+  @@unique([categoryId, name])
+  @@index([categoryId, isActive, sortOrder])
+}
+
+model Payee {
+  id          String    @id @default(uuid()) @db.Uuid
+  name        String    @db.VarChar(200)
+  type        PayeeType
+  specialty   String?   @db.VarChar(160)
+  phone       String?   @db.VarChar(80)
+  companyName String?   @db.VarChar(200)
+  notes       String?   @db.Text
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  expenses   Expense[]
+  agreements Agreement[]
+
+  @@index([name])
+  @@index([companyName])
+  @@index([phone])
+}
+
+model Agreement {
+  id          String   @id @default(uuid()) @db.Uuid
+  projectId   String   @db.Uuid
+  payeeId     String   @db.Uuid
+  totalAmount Decimal  @db.Decimal(18, 2)
+  notes       String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  payee   Payee   @relation(fields: [payeeId], references: [id], onDelete: Restrict)
+
+  @@unique([projectId, payeeId])
+  @@index([payeeId])
+}
+
+model Expense {
+  id             String       @id @default(uuid()) @db.Uuid
+  projectId      String       @db.Uuid
+  expenseDate    DateTime     @db.Date
+  description    String       @db.Text
+  categoryId     String?      @db.Uuid
+  subcategoryId  String?      @db.Uuid
+  payeeId        String?      @db.Uuid
+  invoiceNumber  String?      @db.VarChar(160)
+  quantity       Decimal?     @db.Decimal(18, 4)
+  unit           String?      @db.VarChar(80)
+  unitPrice      Decimal?     @db.Decimal(18, 4)
+  amount         Decimal      @db.Decimal(18, 2)
+  paymentMethod  String?      @db.VarChar(120)
+  notes          String?      @db.Text
+  source         RecordSource @default(WEB)
+  importFileName String?      @db.VarChar(260)
+  importSheet    String?      @db.VarChar(160)
+  importRow      Int?
+  telegramChatId String?      @db.VarChar(64)
+  telegramMsgId  String?      @db.VarChar(64)
+  deletedAt      DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  project     Project      @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  category    Category?    @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  subcategory Subcategory? @relation(fields: [subcategoryId], references: [id], onDelete: Restrict)
+  payee       Payee?       @relation(fields: [payeeId], references: [id], onDelete: Restrict)
+  attachments Attachment[]
+
+  @@index([projectId, expenseDate])
+  @@index([projectId, deletedAt])
+  @@index([payeeId, projectId])
+  @@index([categoryId, expenseDate])
+  @@index([description])
+}
+
+model Transfer {
+  id          String       @id @default(uuid()) @db.Uuid
+  projectId   String       @db.Uuid
+  transferDate DateTime    @db.Date
+  amount      Decimal      @db.Decimal(18, 2)
+  source      RecordSource @default(WEB)
+  deletedAt   DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Restrict)
+
+  @@index([projectId, transferDate])
+  @@index([projectId, deletedAt])
+}
+
+model Attachment {
+  id           String   @id @default(uuid()) @db.Uuid
+  expenseId    String   @db.Uuid
+  objectKey    String   @unique @db.VarChar(500)
+  originalName String   @db.VarChar(260)
+  mimeType     String   @db.VarChar(160)
+  sizeBytes    BigInt
+  sha256       String   @db.VarChar(64)
+  createdAt    DateTime @default(now())
+
+  expense Expense @relation(fields: [expenseId], references: [id], onDelete: Restrict)
+
+  @@index([expenseId])
+}
+
+model AuditEvent {
+  id            String       @id @default(uuid()) @db.Uuid
+  action        AuditAction
+  entityType    String       @db.VarChar(100)
+  entityId      String?      @db.VarChar(100)
+  source        RecordSource
+  beforeData    Json?
+  afterData     Json?
+  correlationId String?      @db.VarChar(100)
+  createdAt     DateTime     @default(now())
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
+
+model AutomationDraft {
+  id             String                @id @default(uuid()) @db.Uuid
+  telegramChatId String                @db.VarChar(64)
+  telegramMsgId  String?               @db.VarChar(64)
+  intent         AutomationIntent
+  payload        Json
+  status         AutomationDraftStatus @default(PENDING)
+  idempotencyKey String                @unique @db.VarChar(160)
+  expiresAt      DateTime
+  confirmedAt    DateTime?
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  @@index([telegramChatId, status])
+  @@index([expiresAt])
+}
+
+model ImportJob {
+  id             String          @id @default(uuid()) @db.Uuid
+  projectId      String          @db.Uuid
+  fileName       String          @db.VarChar(260)
+  fileSha256     String          @db.VarChar(64)
+  sheetName      String          @db.VarChar(160)
+  status         ImportJobStatus @default(PREVIEW)
+  totalRows      Int             @default(0)
+  validRows      Int             @default(0)
+  invalidRows    Int             @default(0)
+  skippedRows    Int             @default(0)
+  duplicateRows  Int             @default(0)
+  committedAt    DateTime?
+  createdAt      DateTime        @default(now())
+
+  project Project     @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  rows    ImportRow[]
+
+  @@index([projectId, createdAt])
+  @@index([fileSha256])
+}
+
+model ImportRow {
+  id          String          @id @default(uuid()) @db.Uuid
+  importJobId String          @db.Uuid
+  sourceRow   Int
+  rowHash     String          @db.VarChar(64)
+  status      ImportRowStatus
+  rawData     Json
+  mappedData  Json?
+  errors      Json?
+  expenseId   String?         @db.Uuid
+  createdAt   DateTime        @default(now())
+
+  importJob ImportJob @relation(fields: [importJobId], references: [id], onDelete: Cascade)
+
+  @@unique([importJobId, sourceRow])
+  @@index([rowHash])
+  @@index([status])
+}
+
+model AppSetting {
+  key       String   @id @db.VarChar(160)
+  value     Json
+  updatedAt DateTime @updatedAt
+}

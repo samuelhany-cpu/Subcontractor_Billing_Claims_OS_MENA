@@ -1,7 +1,9 @@
-# Subcontractor Billing & Claims OS for MENA
+# Local Project Expense Tracker
 
 This monorepo contains the Next.js web application, NestJS API, shared packages,
-and local infrastructure for the bilingual Subcontractor Billing & Claims OS.
+and local infrastructure for a single-user, Arabic-only project expense tracker
+hosted on a Windows computer and available on its private LAN.
+
 The source requirements and implementation order begin at
 [`docs/00_README.md`](docs/00_README.md).
 
@@ -53,7 +55,7 @@ pnpm infra:status
 pnpm infra:check
 ```
 
-The default loopback-only service addresses are:
+The default loopback-only development service addresses are:
 
 | Dependency               | Address                 |
 | ------------------------ | ----------------------- |
@@ -63,7 +65,7 @@ The default loopback-only service addresses are:
 | MinIO management console | `http://localhost:9001` |
 
 Use the `MINIO_ROOT_USER` and `MINIO_ROOT_PASSWORD` values from the local root
-`.env` file to sign into the console. The `claims-documents-local` bucket is
+`.env` file to sign into the console. The configured object-storage bucket is
 private and is created idempotently by `minio-init`.
 
 View status or logs and stop services without deleting their named volumes:
@@ -158,7 +160,7 @@ pnpm format:check
 pnpm lint
 pnpm typecheck
 pnpm test
-pnpm --filter @claims-os/api test:e2e
+pnpm --filter ./apps/api test:e2e
 pnpm build
 ```
 
@@ -167,7 +169,7 @@ tests:
 
 ```bash
 pnpm infra:check
-pnpm --filter @claims-os/api test:infra
+pnpm --filter ./apps/api test:infra
 ```
 
 ## Troubleshooting

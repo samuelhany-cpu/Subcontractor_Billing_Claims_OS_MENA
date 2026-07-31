@@ -1,0 +1,28 @@
+{
+  "workbook": "فيلا العبور - Copy (2).xlsx",
+  "sheet": "Sheet1",
+  "projectName": "فيلا العبور",
+  "columns": {
+    "A": "legacySequence",
+    "B": "expenseDate",
+    "C": "description",
+    "D": "categoryName",
+    "E": "payeeName",
+    "F": "ignored",
+    "G": "companyName",
+    "H": "phone",
+    "I": "invoiceNumber",
+    "J": "quantity",
+    "K": "unitPrice",
+    "L": "amount"
+  },
+  "skipRules": [
+    "skip rows without date",
+    "skip rows without description",
+    "skip rows without positive amount",
+    "skip total/formula rows",
+    "skip incoming transfer section",
+    "skip amount-only rows 2250, 165, 2050"
+  ],
+  "ignoreFormula": "=L7+L8+L9+L18+L19+L20+L22+L31+L34+L39+L44+L55+L56+L57+L58+4050+4050+2025"
+}
