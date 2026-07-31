@@ -185,6 +185,7 @@ model Expense {
   subcategory Subcategory? @relation(fields: [subcategoryId], references: [id], onDelete: Restrict)
   payee       Payee?       @relation(fields: [payeeId], references: [id], onDelete: Restrict)
   attachments Attachment[]
+  importRows  ImportRow[]
 
   @@index([projectId, expenseDate])
   @@index([projectId, deletedAt])
@@ -194,14 +195,14 @@ model Expense {
 }
 
 model Transfer {
-  id          String       @id @default(uuid()) @db.Uuid
-  projectId   String       @db.Uuid
-  transferDate DateTime    @db.Date
-  amount      Decimal      @db.Decimal(18, 2)
-  source      RecordSource @default(WEB)
-  deletedAt   DateTime?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  id           String       @id @default(uuid()) @db.Uuid
+  projectId    String       @db.Uuid
+  transferDate DateTime     @db.Date
+  amount       Decimal      @db.Decimal(18, 2)
+  source       RecordSource @default(WEB)
+  deletedAt    DateTime?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Restrict)
 
@@ -257,19 +258,19 @@ model AutomationDraft {
 }
 
 model ImportJob {
-  id             String          @id @default(uuid()) @db.Uuid
-  projectId      String          @db.Uuid
-  fileName       String          @db.VarChar(260)
-  fileSha256     String          @db.VarChar(64)
-  sheetName      String          @db.VarChar(160)
-  status         ImportJobStatus @default(PREVIEW)
-  totalRows      Int             @default(0)
-  validRows      Int             @default(0)
-  invalidRows    Int             @default(0)
-  skippedRows    Int             @default(0)
-  duplicateRows  Int             @default(0)
-  committedAt    DateTime?
-  createdAt      DateTime        @default(now())
+  id            String          @id @default(uuid()) @db.Uuid
+  projectId     String          @db.Uuid
+  fileName      String          @db.VarChar(260)
+  fileSha256    String          @db.VarChar(64)
+  sheetName     String          @db.VarChar(160)
+  status        ImportJobStatus @default(PREVIEW)
+  totalRows     Int             @default(0)
+  validRows     Int             @default(0)
+  invalidRows   Int             @default(0)
+  skippedRows   Int             @default(0)
+  duplicateRows Int             @default(0)
+  committedAt   DateTime?
+  createdAt     DateTime        @default(now())
 
   project Project     @relation(fields: [projectId], references: [id], onDelete: Restrict)
   rows    ImportRow[]
@@ -291,6 +292,7 @@ model ImportRow {
   createdAt   DateTime        @default(now())
 
   importJob ImportJob @relation(fields: [importJobId], references: [id], onDelete: Cascade)
+  expense   Expense?  @relation(fields: [expenseId], references: [id], onDelete: Restrict)
 
   @@unique([importJobId, sourceRow])
   @@index([rowHash])

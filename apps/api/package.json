@@ -21,6 +21,7 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
+    "test:database": "tsx test/run-database-tests.ts",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "test:infra": "jest --config ./test/jest-infrastructure.json --runInBand"
   },

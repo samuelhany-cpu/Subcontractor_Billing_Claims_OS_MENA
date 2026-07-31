@@ -3,6 +3,7 @@ import { Module } from '@nestjs/common';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@prisma/client';
 import Redis from 'ioredis';
+import { AuditService } from '../audit/audit.service';
 import { API_RUNTIME_CONFIG, ApiRuntimeConfig } from '../config/api-config';
 import {
   DATABASE_CLIENT,
@@ -65,6 +66,7 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
       provide: OBJECT_STORAGE_SIGNER,
       useValue: getSignedUrl,
     },
+    AuditService,
     DatabaseService,
     RedisService,
     {
@@ -82,6 +84,12 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
         new ObjectStorageService(client, bucket, signer),
     },
   ],
-  exports: [DatabaseService, RedisService, ObjectStorageService],
+  exports: [
+    DATABASE_CLIENT,
+    AuditService,
+    DatabaseService,
+    RedisService,
+    ObjectStorageService,
+  ],
 })
 export class InfrastructureModule {}
