@@ -354,20 +354,107 @@ paths:
   /payees:
     get:
       operationId: listPayees
+      parameters:
+        - in: query
+          name: status
+          schema: { $ref: "#/components/schemas/PayeeFilter" }
+        - in: query
+          name: search
+          description: Trimmed literal substring matched server-side against name, company name, phone, and specialty
+          schema: { type: string, maxLength: 200 }
       responses:
-        "200": { description: Payees returned }
+        "200":
+          description: Payees returned in deterministic name and id order with grouped non-deleted Expense totals
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Payee" }
+        "400": { $ref: "#/components/responses/BadRequest" }
     post:
       operationId: createPayee
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: "#/components/schemas/PayeeInput" }
+            schema: { $ref: "#/components/schemas/CreatePayee" }
       responses:
-        "201": { description: Payee created }
+        "201":
+          description: Global Payee created; names are intentionally non-unique
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Payee" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+  /payees/{payeeId}:
+    get:
+      operationId: getPayee
+      parameters: [{ $ref: "#/components/parameters/PayeeId" }]
+      responses:
+        "200":
+          description: Payee returned with exact global total and qualifying Project summaries
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PayeeDetail" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      operationId: updatePayee
+      parameters: [{ $ref: "#/components/parameters/PayeeId" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdatePayee" }
+      responses:
+        "200":
+          description: Payee updated in place while preserving historical links
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Payee" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /payees/{payeeId}/deactivate:
+    post:
+      operationId: deactivatePayee
+      parameters: [{ $ref: "#/components/parameters/PayeeId" }]
+      responses:
+        "200":
+          description: Payee deactivated without deleting Expenses or Agreements
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Payee" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /payees/{payeeId}/reactivate:
+    post:
+      operationId: reactivatePayee
+      parameters: [{ $ref: "#/components/parameters/PayeeId" }]
+      responses:
+        "200":
+          description: Payee reactivated using the same identity
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Payee" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
   /projects/{projectId}/payees/{payeeId}/agreement:
-    put:
-      operationId: upsertAgreement
+    get:
+      operationId: getAgreement
+      parameters:
+        - { $ref: "#/components/parameters/ProjectId" }
+        - { $ref: "#/components/parameters/PayeeId" }
+      responses:
+        "200":
+          description: Agreement returned with exact derived paid, remaining, and overpayment values
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Agreement" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    post:
+      operationId: createAgreement
       parameters:
         - { $ref: "#/components/parameters/ProjectId" }
         - { $ref: "#/components/parameters/PayeeId" }
@@ -375,14 +462,35 @@ paths:
         required: true
         content:
           application/json:
-            schema:
-              type: object
-              required: [totalAmount]
-              properties:
-                totalAmount: { $ref: "#/components/schemas/Money" }
-                notes: { type: [string, "null"] }
+            schema: { $ref: "#/components/schemas/AgreementInput" }
       responses:
-        "200": { description: Agreement saved }
+        "201":
+          description: Agreement created for the active Project and Payee
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Agreement" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+    patch:
+      operationId: updateAgreement
+      parameters:
+        - { $ref: "#/components/parameters/ProjectId" }
+        - { $ref: "#/components/parameters/PayeeId" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AgreementInput" }
+      responses:
+        "200":
+          description: Existing Agreement updated for the active Project
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Agreement" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
   /reports/expenses.xlsx:
     get:
       operationId: exportExpensesExcel
@@ -654,16 +762,100 @@ components:
         transferDate: { type: string, format: date }
         amount: { $ref: "#/components/schemas/Money" }
         source: { type: string, enum: [WEB, TELEGRAM, EXCEL_IMPORT] }
-    PayeeInput:
+    PayeeType:
+      type: string
+      enum: [SUPPLIER, CRAFTSMAN, WORKER, COMPANY, OTHER]
+    PayeeFilter:
+      type: string
+      enum: [ACTIVE, INACTIVE, ALL]
+      default: ACTIVE
+    PayeeFields:
       type: object
-      required: [name, type]
       properties:
         name: { type: string, minLength: 1, maxLength: 200 }
-        type: { type: string, enum: [SUPPLIER, CRAFTSMAN, WORKER, COMPANY, OTHER] }
-        specialty: { type: [string, "null"] }
-        phone: { type: [string, "null"] }
-        companyName: { type: [string, "null"] }
+        type: { $ref: "#/components/schemas/PayeeType" }
+        specialty: { type: [string, "null"], maxLength: 160 }
+        phone: { type: [string, "null"], maxLength: 80 }
+        companyName: { type: [string, "null"], maxLength: 200 }
         notes: { type: [string, "null"] }
+    CreatePayee:
+      unevaluatedProperties: false
+      allOf:
+        - { $ref: "#/components/schemas/PayeeFields" }
+        - type: object
+          required: [name, type]
+    UpdatePayee:
+      unevaluatedProperties: false
+      allOf:
+        - { $ref: "#/components/schemas/PayeeFields" }
+        - type: object
+          minProperties: 1
+    Payee:
+      allOf:
+        - { $ref: "#/components/schemas/PayeeFields" }
+        - type: object
+          required: [id, name, type, specialty, phone, companyName, notes, isActive, totalPaid, createdAt, updatedAt]
+          properties:
+            id: { type: string, format: uuid }
+            isActive: { type: boolean }
+            totalPaid: { $ref: "#/components/schemas/Money" }
+            createdAt: { type: string, format: date-time }
+            updatedAt: { type: string, format: date-time }
+    AgreementFinancialSummary:
+      type: object
+      required: [id, totalAmount, paidAmount, remainingAmount, overpaidAmount, notes, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        totalAmount: { $ref: "#/components/schemas/Money" }
+        paidAmount: { $ref: "#/components/schemas/Money" }
+        remainingAmount: { $ref: "#/components/schemas/SignedMoney" }
+        overpaidAmount: { $ref: "#/components/schemas/Money" }
+        notes: { type: [string, "null"] }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    PayeeProjectSummary:
+      type: object
+      required: [projectId, projectName, projectStatus, paidAmount, agreement]
+      description: Included only when an Agreement or at least one non-deleted Expense exists for this Project and Payee
+      properties:
+        projectId: { type: string, format: uuid }
+        projectName: { type: string }
+        projectStatus: { $ref: "#/components/schemas/ProjectStatus" }
+        paidAmount: { $ref: "#/components/schemas/Money" }
+        agreement:
+          oneOf:
+            - { $ref: "#/components/schemas/AgreementFinancialSummary" }
+            - { type: "null" }
+    PayeeDetail:
+      allOf:
+        - { $ref: "#/components/schemas/Payee" }
+        - type: object
+          required: [projects]
+          properties:
+            projects:
+              type: array
+              items: { $ref: "#/components/schemas/PayeeProjectSummary" }
+    AgreementInput:
+      type: object
+      additionalProperties: false
+      required: [totalAmount]
+      properties:
+        totalAmount:
+          type: string
+          pattern: '^(?=.*[1-9])(?:0|[1-9]\d{0,15})(?:\.\d{1,2})?$'
+          examples: ["36450.00"]
+        notes: { type: [string, "null"] }
+    Agreement:
+      allOf:
+        - { $ref: "#/components/schemas/AgreementFinancialSummary" }
+        - type: object
+          required: [projectId, projectName, projectStatus, payeeId, payeeName]
+          properties:
+            projectId: { type: string, format: uuid }
+            projectName: { type: string }
+            projectStatus: { $ref: "#/components/schemas/ProjectStatus" }
+            payeeId: { type: string, format: uuid }
+            payeeName: { type: string }
     AutomationDraftInput:
       type: object
       required: [telegramChatId, intent, payload, idempotencyKey]

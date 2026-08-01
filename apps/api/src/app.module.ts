@@ -4,6 +4,7 @@ import { ApiConfigModule } from './config/api-config.module';
 import { HealthModule } from './health/health.module';
 import { InfrastructureModule } from './infrastructure/infrastructure.module';
 import { ObservabilityModule } from './observability/observability.module';
+import { PayeesModule } from './payees/payees.module';
 import { ProjectsModule } from './projects/projects.module';
 
 @Module({
@@ -13,6 +14,7 @@ import { ProjectsModule } from './projects/projects.module';
     ObservabilityModule,
     InfrastructureModule,
     HealthModule,
+    PayeesModule,
     ProjectsModule,
   ],
 })

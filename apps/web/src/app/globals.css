@@ -34,7 +34,8 @@ a {
 }
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
 }
 button,
@@ -185,8 +186,96 @@ select {
   color: var(--ink);
 }
 input:focus,
-select:focus {
+select:focus,
+textarea:focus {
   border-color: var(--primary);
+}
+
+.payee-grid,
+.payee-projects {
+  display: grid;
+  gap: 16px;
+  margin-top: 18px;
+}
+.payee-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.payee-card,
+.payee-project-card {
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+.payee-card.inactive,
+.payee-project-card.inactive {
+  background: #f2f1ed;
+}
+.payee-card h2,
+.payee-project-card h3 {
+  margin: 8px 0 3px;
+}
+.payee-card h2 a {
+  text-underline-offset: 5px;
+}
+.payee-card p {
+  margin: 6px 0;
+  color: var(--muted);
+}
+.payee-total {
+  display: block;
+  margin-top: 16px;
+  color: var(--primary-dark);
+}
+.payee-tools {
+  align-items: end;
+}
+.payee-search {
+  display: grid;
+  grid-template-columns: minmax(200px, 380px) auto;
+  align-items: end;
+  gap: 8px;
+}
+.payee-search label {
+  grid-column: 1 / -1;
+  font-weight: 800;
+}
+.payee-form textarea,
+.agreement-form textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #bfcac5;
+  border-radius: 11px;
+  resize: vertical;
+}
+.agreement-form {
+  display: grid;
+  gap: 16px;
+  padding: 20px 22px;
+}
+.agreement-live-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+.agreement-live-summary div {
+  padding: 12px;
+  border-radius: 11px;
+  background: var(--surface-soft);
+}
+.agreement-live-summary dt {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+.agreement-live-summary dd {
+  margin: 4px 0 0;
+  font-weight: 800;
+}
+.agreement-live-summary .overpaid {
+  background: #fff0ee;
+  color: var(--danger);
 }
 .field-help {
   margin: 0;
@@ -439,6 +528,18 @@ select:focus {
   }
   .project-metrics {
     grid-template-columns: 1fr;
+  }
+  .payee-grid,
+  .agreement-live-summary {
+    grid-template-columns: 1fr;
+  }
+  .payee-tools,
+  .payee-search {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+  .payee-search label {
+    grid-column: auto;
   }
   .button {
     width: 100%;
