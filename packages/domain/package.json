@@ -16,7 +16,7 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "test": "pnpm run build && node --test dist/test/package-boundary.test.js dist/test/projects.test.js",
+    "test": "pnpm run build && node --test dist/test/package-boundary.test.js dist/test/projects.test.js dist/test/categories.test.js",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {

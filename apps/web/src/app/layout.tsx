@@ -30,6 +30,10 @@ export default async function RootLayout({
             </Link>
             <span>تشغيل محلي آمن وبسيط</span>
           </div>
+          <nav className="main-nav" aria-label="التنقل الرئيسي">
+            <Link href="/projects">المشروعات</Link>
+            <Link href="/settings/categories">الإعدادات</Link>
+          </nav>
           {apiAvailable ? (
             <ProjectSelector projects={projects} />
           ) : (
