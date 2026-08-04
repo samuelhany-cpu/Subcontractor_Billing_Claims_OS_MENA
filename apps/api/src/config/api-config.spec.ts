@@ -28,6 +28,10 @@ const validEnvironment = {
   OBJECT_STORAGE_SECRET_KEY: 'claims_local_minio_secret',
   OBJECT_STORAGE_SECURE: 'false',
   OBJECT_STORAGE_FORCE_PATH_STYLE: 'true',
+  ATTACHMENT_ALLOWED_MIME_TYPES:
+    'image/jpeg,image/png,image/webp,application/pdf',
+  ATTACHMENT_MAX_BYTES: '10485760',
+  ATTACHMENT_MAX_PER_EXPENSE: '10',
 } as const;
 
 function expectInvalid(
@@ -55,6 +59,16 @@ describe('parseApiEnvironment', () => {
     expect(config.diagnostics.healthCheckTimeoutMs).toBe(1000);
     expect(config.objectStorage.secure).toBe(false);
     expect(config.objectStorage.forcePathStyle).toBe(true);
+    expect(config.attachments).toEqual({
+      allowedMimeTypes: [
+        'image/jpeg',
+        'image/png',
+        'image/webp',
+        'application/pdf',
+      ],
+      maxBytes: 10485760,
+      maxPerExpense: 10,
+    });
     expect(config.http.corsOrigins).toEqual([
       'http://localhost:3000',
       'https://review.example.test',
@@ -97,6 +111,12 @@ describe('parseApiEnvironment', () => {
     [{ OBJECT_STORAGE_ENDPOINT: 'not-a-url' }, 'OBJECT_STORAGE_ENDPOINT'],
     [{ OBJECT_STORAGE_ACCESS_KEY: ' ' }, 'OBJECT_STORAGE_ACCESS_KEY'],
     [{ OBJECT_STORAGE_SECRET_KEY: '' }, 'OBJECT_STORAGE_SECRET_KEY'],
+    [
+      { ATTACHMENT_ALLOWED_MIME_TYPES: 'image/jpeg,image/jpeg' },
+      'ATTACHMENT_ALLOWED_MIME_TYPES',
+    ],
+    [{ ATTACHMENT_MAX_BYTES: '0' }, 'ATTACHMENT_MAX_BYTES'],
+    [{ ATTACHMENT_MAX_PER_EXPENSE: '1.5' }, 'ATTACHMENT_MAX_PER_EXPENSE'],
     [{ API_PORT: '70000' }, 'API_PORT'],
     [{ OBJECT_STORAGE_SECURE: 'yes' }, 'OBJECT_STORAGE_SECURE'],
     [{ REQUEST_LOGGING: 'yes' }, 'REQUEST_LOGGING'],

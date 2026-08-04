@@ -21,6 +21,10 @@ function createConfig(requestLogging = 'true') {
     OBJECT_STORAGE_BUCKET: 'claims-test-private',
     OBJECT_STORAGE_ACCESS_KEY: 'test_access',
     OBJECT_STORAGE_SECRET_KEY: 'test_secret',
+    ATTACHMENT_ALLOWED_MIME_TYPES:
+      'image/jpeg,image/png,image/webp,application/pdf',
+    ATTACHMENT_MAX_BYTES: '10485760',
+    ATTACHMENT_MAX_PER_EXPENSE: '10',
   });
 }
 

@@ -22,6 +22,27 @@ const boundedMillisecondsString = z
   .regex(/^[0-9]+$/, 'must be an integer between 50 and 10000')
   .transform(Number)
   .pipe(z.number().int().min(50).max(10_000));
+const positiveIntegerString = z
+  .string()
+  .regex(/^[0-9]+$/, 'must be a positive integer')
+  .transform(Number)
+  .pipe(z.number().int().positive());
+const mimeTypeList = nonEmptyString.transform((value, context) => {
+  const values = value.split(',').map((item) => item.trim());
+  if (
+    values.some(
+      (item) => !/^[a-z0-9][a-z0-9.+-]*\/[a-z0-9][a-z0-9.+-]*$/.test(item),
+    ) ||
+    new Set(values).size !== values.length
+  ) {
+    context.addIssue({
+      code: 'custom',
+      message: 'must contain unique comma-separated MIME types',
+    });
+    return z.NEVER;
+  }
+  return values;
+});
 const booleanString = z
   .enum(['true', 'false'], {
     error: 'must be either true or false',
@@ -90,6 +111,9 @@ const rawEnvironmentSchema = z
     OBJECT_STORAGE_SECRET_KEY: nonEmptyString,
     OBJECT_STORAGE_SECURE: booleanString.default(false),
     OBJECT_STORAGE_FORCE_PATH_STYLE: booleanString.default(true),
+    ATTACHMENT_ALLOWED_MIME_TYPES: mimeTypeList,
+    ATTACHMENT_MAX_BYTES: positiveIntegerString,
+    ATTACHMENT_MAX_PER_EXPENSE: positiveIntegerString,
   })
   .superRefine((environment, context) => {
     let storageUrl: URL;
@@ -221,6 +245,11 @@ export interface ApiRuntimeConfig {
     readonly secure: boolean;
     readonly forcePathStyle: boolean;
   };
+  readonly attachments: {
+    readonly allowedMimeTypes: readonly string[];
+    readonly maxBytes: number;
+    readonly maxPerExpense: number;
+  };
 }
 
 export interface PublicWebRuntimeConfig {
@@ -297,6 +326,11 @@ export function parseApiEnvironment(
       secure: value.OBJECT_STORAGE_SECURE,
       forcePathStyle: value.OBJECT_STORAGE_FORCE_PATH_STYLE,
     }),
+    attachments: Object.freeze({
+      allowedMimeTypes: Object.freeze([...value.ATTACHMENT_ALLOWED_MIME_TYPES]),
+      maxBytes: value.ATTACHMENT_MAX_BYTES,
+      maxPerExpense: value.ATTACHMENT_MAX_PER_EXPENSE,
+    }),
   });
 }
 
@@ -319,6 +353,7 @@ export function redactApiRuntimeConfig(
       accessKey: REDACTED_VALUE,
       secretKey: REDACTED_VALUE,
     },
+    attachments: config.attachments,
   };
 }
 

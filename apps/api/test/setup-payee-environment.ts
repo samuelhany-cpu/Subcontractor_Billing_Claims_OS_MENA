@@ -23,4 +23,8 @@ Object.assign(process.env, {
   OBJECT_STORAGE_SECRET_KEY: 'test_secret_key',
   OBJECT_STORAGE_SECURE: 'false',
   OBJECT_STORAGE_FORCE_PATH_STYLE: 'true',
+  ATTACHMENT_ALLOWED_MIME_TYPES:
+    'image/jpeg,image/png,image/webp,application/pdf',
+  ATTACHMENT_MAX_BYTES: '10485760',
+  ATTACHMENT_MAX_PER_EXPENSE: '10',
 });

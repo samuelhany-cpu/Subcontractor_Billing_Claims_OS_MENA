@@ -282,7 +282,6 @@ paths:
       parameters:
         - in: query
           name: projectId
-          required: true
           schema: { type: string, format: uuid }
         - in: query
           name: from
@@ -294,44 +293,148 @@ paths:
           name: categoryId
           schema: { type: string, format: uuid }
         - in: query
+          name: subcategoryId
+          schema: { type: string, format: uuid }
+        - in: query
           name: payeeId
           schema: { type: string, format: uuid }
         - in: query
+          name: paymentMethod
+          schema: { type: string, maxLength: 120 }
+        - in: query
+          name: source
+          schema: { $ref: "#/components/schemas/ExpenseSource" }
+        - in: query
           name: search
-          schema: { type: string }
+          schema: { type: string, maxLength: 200 }
+        - in: query
+          name: sort
+          schema:
+            $ref: "#/components/schemas/ExpenseSort"
+        - in: query
+          name: page
+          schema: { type: integer, minimum: 1, default: 1 }
+        - in: query
+          name: pageSize
+          schema: { type: integer, minimum: 1, maximum: 100, default: 25 }
       responses:
-        "200": { description: Expenses returned }
+        "200":
+          description: Active Expenses returned using inclusive date boundaries
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ExpenseList" }
+        "400": { $ref: "#/components/responses/BadRequest" }
     post:
       operationId: createExpense
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: "#/components/schemas/ExpenseInput" }
+            schema: { $ref: "#/components/schemas/CreateExpense" }
       responses:
-        "201": { description: Expense created }
+        "201":
+          description: Expense created with trusted WEB source
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Expense" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
   /expenses/{expenseId}:
+    get:
+      operationId: getExpense
+      parameters: [{ $ref: "#/components/parameters/ExpenseId" }]
+      responses:
+        "200":
+          description: Active Expense returned
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Expense" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
     patch:
       operationId: updateExpense
-      parameters: [ { $ref: "#/components/parameters/ExpenseId" } ]
+      parameters: [{ $ref: "#/components/parameters/ExpenseId" }]
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: "#/components/schemas/ExpenseInput" }
+            schema: { $ref: "#/components/schemas/UpdateExpense" }
       responses:
-        "200": { description: Expense updated }
-    delete:
-      operationId: deleteExpense
-      parameters: [ { $ref: "#/components/parameters/ExpenseId" } ]
+        "200":
+          description: Active Expense updated without changing Project or source
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Expense" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /expenses/{expenseId}/attachments:
+    get:
+      operationId: listExpenseAttachments
+      parameters: [{ $ref: "#/components/parameters/ExpenseId" }]
       responses:
-        "204": { description: Expense moved to recycle bin }
-  /expenses/{expenseId}/restore:
+        "200":
+          description: Private Attachment metadata returned
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Attachment" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
     post:
-      operationId: restoreExpense
-      parameters: [ { $ref: "#/components/parameters/ExpenseId" } ]
+      operationId: uploadExpenseAttachment
+      parameters: [{ $ref: "#/components/parameters/ExpenseId" }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: JPEG, PNG, WebP, or PDF; non-empty and at most 10 MiB
       responses:
-        "200": { description: Expense restored }
+        "201":
+          description: Private Attachment uploaded and metadata recorded
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Attachment" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "413": { $ref: "#/components/responses/PayloadTooLarge" }
+        "415": { $ref: "#/components/responses/UnsupportedMediaType" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /attachments/{attachmentId}/content:
+    get:
+      operationId: streamAttachmentContent
+      parameters:
+        - in: path
+          name: attachmentId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Private Attachment content streamed with no-store headers
+          headers:
+            Cache-Control:
+              schema: { type: string, const: "private, no-store" }
+            Content-Disposition:
+              schema: { type: string }
+          content:
+            image/jpeg: { schema: { type: string, format: binary } }
+            image/png: { schema: { type: string, format: binary } }
+            image/webp: { schema: { type: string, format: binary } }
+            application/pdf: { schema: { type: string, format: binary } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /transfers:
     get:
       operationId: listTransfers
@@ -585,6 +688,21 @@ components:
       content:
         application/problem+json:
           schema: { $ref: "#/components/schemas/Problem" }
+    PayloadTooLarge:
+      description: Uploaded file exceeds the configured 10 MiB limit
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+    UnsupportedMediaType:
+      description: Uploaded content signature and MIME policy do not match
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+    ServiceUnavailable:
+      description: A required private infrastructure dependency is unavailable
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
   parameters:
     ProjectId:
       in: path
@@ -733,27 +851,180 @@ components:
           type: array
           description: All active and inactive children, ordered by sortOrder then id
           items: { $ref: "#/components/schemas/Subcategory" }
-    ExpenseInput:
+    ExpenseSource:
+      type: string
+      enum: [WEB, TELEGRAM, EXCEL_IMPORT]
+    ExpenseSort:
+      type: string
+      enum: [NEWEST, OLDEST]
+      default: NEWEST
+    PositiveExpenseMoney:
+      type: string
+      pattern: '^(?=.*[1-9])(?:0|[1-9]\d{0,15})(?:\.\d{1,2})?$'
+      examples: ["10000.00"]
+    PositivePreciseDecimal:
+      type: string
+      pattern: '^(?=.*[1-9])(?:0|[1-9]\d{0,13})(?:\.\d{1,4})?$'
+      examples: ["3.0000", "12150.0000"]
+    ExpenseWritableFields:
       type: object
-      required: [projectId, expenseDate, description]
-      oneOf:
-        - required: [amount]
-        - required: [quantity, unitPrice]
       properties:
-        projectId: { type: string, format: uuid }
         expenseDate: { type: string, format: date }
-        description: { type: string, minLength: 1 }
-        categoryId: { type: [string, "null"], format: uuid }
+        description: { type: string, minLength: 1, maxLength: 10000 }
+        categoryId: { type: string, format: uuid }
         subcategoryId: { type: [string, "null"], format: uuid }
         payeeId: { type: [string, "null"], format: uuid }
+        invoiceNumber: { type: [string, "null"], maxLength: 160 }
+        quantity:
+          oneOf:
+            - { $ref: "#/components/schemas/PositivePreciseDecimal" }
+            - { type: "null" }
+        unit: { type: [string, "null"], maxLength: 80 }
+        unitPrice:
+          oneOf:
+            - { $ref: "#/components/schemas/PositivePreciseDecimal" }
+            - { type: "null" }
+        amount:
+          oneOf:
+            - { $ref: "#/components/schemas/PositiveExpenseMoney" }
+            - { type: "null" }
+        paymentMethod: { type: [string, "null"], maxLength: 120 }
+        notes: { type: [string, "null"], maxLength: 10000 }
+    CreateExpense:
+      unevaluatedProperties: false
+      allOf:
+        - { $ref: "#/components/schemas/ExpenseWritableFields" }
+        - type: object
+          required: [projectId, expenseDate, description, categoryId]
+          properties:
+            projectId: { type: string, format: uuid }
+          oneOf:
+            - description: Calculated mode; amount is prohibited
+              required: [quantity, unitPrice]
+              properties:
+                quantity: { $ref: "#/components/schemas/PositivePreciseDecimal" }
+                unitPrice: { $ref: "#/components/schemas/PositivePreciseDecimal" }
+              not: { required: [amount] }
+            - description: Manual mode; both calculation inputs cannot coexist
+              required: [amount]
+              properties:
+                amount: { $ref: "#/components/schemas/PositiveExpenseMoney" }
+              not: { required: [quantity, unitPrice] }
+    UpdateExpense:
+      unevaluatedProperties: false
+      allOf:
+        - { $ref: "#/components/schemas/ExpenseWritableFields" }
+        - type: object
+          minProperties: 1
+          description: Project and source are immutable. Financial changes are validated against the merged stored state using the CreateExpense amount union.
+    ExpenseProjectSummary:
+      type: object
+      additionalProperties: false
+      required: [id, name, status]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        status: { $ref: "#/components/schemas/ProjectStatus" }
+    ExpenseClassificationSummary:
+      type: object
+      additionalProperties: false
+      required: [id, name, isActive]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        isActive: { type: boolean }
+    ExpensePayeeSummary:
+      type: object
+      additionalProperties: false
+      required: [id, name, type, companyName, isActive]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        type: { $ref: "#/components/schemas/PayeeType" }
+        companyName: { type: [string, "null"] }
+        isActive: { type: boolean }
+    Attachment:
+      type: object
+      additionalProperties: false
+      required: [id, expenseId, originalName, mimeType, sizeBytes, sha256, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        expenseId: { type: string, format: uuid }
+        originalName: { type: string, minLength: 1, maxLength: 260 }
+        mimeType:
+          type: string
+          enum: [image/jpeg, image/png, image/webp, application/pdf]
+        sizeBytes:
+          type: string
+          pattern: '^\d+$'
+        sha256:
+          type: string
+          pattern: '^[a-f0-9]{64}$'
+        createdAt: { type: string, format: date-time }
+    Expense:
+      type: object
+      additionalProperties: false
+      required: [id, project, expenseDate, description, category, subcategory, payee, invoiceNumber, quantity, unit, unitPrice, amount, paymentMethod, notes, source, importFileName, importSheet, importRow, telegramChatId, telegramMsgId, attachments, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        project: { $ref: "#/components/schemas/ExpenseProjectSummary" }
+        expenseDate: { type: string, format: date }
+        description: { type: string }
+        category:
+          oneOf:
+            - { $ref: "#/components/schemas/ExpenseClassificationSummary" }
+            - { type: "null" }
+        subcategory:
+          oneOf:
+            - { $ref: "#/components/schemas/ExpenseClassificationSummary" }
+            - { type: "null" }
+        payee:
+          oneOf:
+            - { $ref: "#/components/schemas/ExpensePayeeSummary" }
+            - { type: "null" }
         invoiceNumber: { type: [string, "null"] }
-        quantity: { type: [string, "null"] }
+        quantity:
+          oneOf:
+            - { $ref: "#/components/schemas/PositivePreciseDecimal" }
+            - { type: "null" }
         unit: { type: [string, "null"] }
-        unitPrice: { type: [string, "null"] }
+        unitPrice:
+          oneOf:
+            - { $ref: "#/components/schemas/PositivePreciseDecimal" }
+            - { type: "null" }
         amount: { $ref: "#/components/schemas/Money" }
         paymentMethod: { type: [string, "null"] }
         notes: { type: [string, "null"] }
-        source: { type: string, enum: [WEB, TELEGRAM, EXCEL_IMPORT] }
+        source: { $ref: "#/components/schemas/ExpenseSource" }
+        importFileName: { type: [string, "null"] }
+        importSheet: { type: [string, "null"] }
+        importRow: { type: [integer, "null"] }
+        telegramChatId: { type: [string, "null"] }
+        telegramMsgId: { type: [string, "null"] }
+        attachments:
+          type: array
+          maxItems: 10
+          items: { $ref: "#/components/schemas/Attachment" }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    Pagination:
+      type: object
+      additionalProperties: false
+      required: [page, pageSize, totalItems, totalPages]
+      properties:
+        page: { type: integer, minimum: 1 }
+        pageSize: { type: integer, minimum: 1, maximum: 100 }
+        totalItems: { type: integer, minimum: 0 }
+        totalPages: { type: integer, minimum: 0 }
+    ExpenseList:
+      type: object
+      additionalProperties: false
+      required: [items, pagination]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Expense" }
+        pagination: { $ref: "#/components/schemas/Pagination" }
     TransferInput:
       type: object
       required: [projectId, transferDate, amount]

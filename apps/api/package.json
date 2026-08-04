@@ -26,7 +26,8 @@
     "test:infra": "jest --config ./test/jest-infrastructure.json --runInBand",
     "test:projects": "tsx test/run-project-tests.ts",
     "test:categories": "tsx test/run-category-tests.ts",
-    "test:payees": "tsx test/run-payee-tests.ts"
+    "test:payees": "tsx test/run-payee-tests.ts",
+    "test:expenses": "tsx test/run-expense-tests.ts"
   },
   "dependencies": {
     "@claims-os/domain": "workspace:*",

@@ -17,6 +17,8 @@ function readValidatedConfig(config: ConfigService): ApiRuntimeConfig {
     redis: config.getOrThrow<ApiRuntimeConfig['redis']>('redis'),
     objectStorage:
       config.getOrThrow<ApiRuntimeConfig['objectStorage']>('objectStorage'),
+    attachments:
+      config.getOrThrow<ApiRuntimeConfig['attachments']>('attachments'),
   };
 }
 
