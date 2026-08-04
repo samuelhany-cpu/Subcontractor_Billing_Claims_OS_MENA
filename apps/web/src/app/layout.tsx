@@ -33,7 +33,9 @@ export default async function RootLayout({
           <nav className="main-nav" aria-label="التنقل الرئيسي">
             <Link href="/projects">المشروعات</Link>
             <Link href="/expenses">المصروفات</Link>
+            <Link href="/transfers">التحويلات</Link>
             <Link href="/payees">الموردون والصنايعية</Link>
+
             <Link href="/settings/categories">الإعدادات</Link>
           </nav>
           {apiAvailable ? (

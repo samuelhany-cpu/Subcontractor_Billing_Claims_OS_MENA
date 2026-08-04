@@ -30,12 +30,21 @@ export default async function ProjectDetailPage({
       <Link className="back-link" href="/projects">
         العودة إلى المشروعات
       </Link>
-      <Link
-        className="button button-primary project-expenses-link"
-        href={`/expenses?projectId=${project.id}`}
-      >
-        مصروفات المشروع
-      </Link>
+      <div className="project-detail-actions">
+        <Link
+          className="button button-primary project-expenses-link"
+          href={`/expenses?projectId=${project.id}`}
+        >
+          مصروفات المشروع
+        </Link>
+        <Link
+          className="button button-secondary project-transfers-link"
+          href={`/transfers?projectId=${project.id}`}
+        >
+          تحويلات المشروع
+        </Link>
+      </div>
+
       <section className="detail-heading">
         <div>
           <span className={`status-badge ${archived ? 'archived' : ''}`}>

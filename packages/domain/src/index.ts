@@ -7,3 +7,4 @@ export * from './categories.js';
 export * from './expenses.js';
 export * from './payees.js';
 export * from './projects.js';
+export * from './transfers.js';
