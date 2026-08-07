@@ -13,6 +13,8 @@ import { ProjectStateService } from '../projects/project-state.service';
 import {
   categoryInactive,
   categoryNotFound,
+  expenseAlreadyActive,
+  expenseAlreadyDeleted,
   expenseNotFound,
   payeeInactive,
   payeeNotFound,
@@ -20,6 +22,7 @@ import {
   subcategoryMismatch,
   subcategoryNotFound,
 } from './expense-errors';
+
 import {
   ExpenseAmountResult,
   ExpenseAmountService,
@@ -57,7 +60,81 @@ export class ExpensesService {
   }
 
   async get(expenseId: string): Promise<ExpenseResponse> {
-    return mapExpense(await this.requireExpense(expenseId));
+    return mapExpense(await this.requireExpenseWithDeleted(expenseId));
+  }
+
+  delete(expenseId: string, correlationId?: string): Promise<ExpenseResponse> {
+    return this.expenses.transaction(async (transaction) => {
+      const current = await this.requireExpenseWithDeleted(
+        expenseId,
+        transaction,
+      );
+      await this.projects.assertAcceptsWrites(current.projectId, transaction);
+
+      if (current.deletedAt !== null) {
+        throw expenseAlreadyDeleted();
+      }
+
+      const deleted = await this.expenses.update(
+        expenseId,
+        { deletedAt: new Date() },
+        transaction,
+      );
+
+      await this.audit.append(
+        {
+          action: AuditAction.DELETE,
+          entityType: 'Expense',
+          entityId: expenseId,
+          source: current.source,
+          before: expenseSnapshot('delete', current),
+          after: expenseSnapshot('delete', deleted),
+          ...(correlationId === undefined ? {} : { correlationId }),
+        },
+        transaction,
+      );
+
+      return mapExpense(
+        await this.requireExpenseWithDeleted(expenseId, transaction),
+      );
+    });
+  }
+
+  restore(expenseId: string, correlationId?: string): Promise<ExpenseResponse> {
+    return this.expenses.transaction(async (transaction) => {
+      const current = await this.requireExpenseWithDeleted(
+        expenseId,
+        transaction,
+      );
+      await this.projects.assertAcceptsWrites(current.projectId, transaction);
+
+      if (current.deletedAt === null) {
+        throw expenseAlreadyActive();
+      }
+
+      const restored = await this.expenses.update(
+        expenseId,
+        { deletedAt: null },
+        transaction,
+      );
+
+      await this.audit.append(
+        {
+          action: AuditAction.RESTORE,
+          entityType: 'Expense',
+          entityId: expenseId,
+          source: current.source,
+          before: expenseSnapshot('restore', current),
+          after: expenseSnapshot('restore', restored),
+          ...(correlationId === undefined ? {} : { correlationId }),
+        },
+        transaction,
+      );
+
+      return mapExpense(
+        await this.requireExpenseWithDeleted(expenseId, transaction),
+      );
+    });
   }
 
   create(
@@ -301,6 +378,18 @@ export class ExpensesService {
     client?: ExpenseDataClient,
   ): Promise<ExpandedExpense> {
     const expense = await this.expenses.findExpanded(expenseId, client);
+    if (expense === null) throw expenseNotFound();
+    return expense;
+  }
+
+  private async requireExpenseWithDeleted(
+    expenseId: string,
+    client?: ExpenseDataClient,
+  ): Promise<ExpandedExpense> {
+    const expense = await this.expenses.findExpandedWithDeleted(
+      expenseId,
+      client,
+    );
     if (expense === null) throw expenseNotFound();
     return expense;
   }

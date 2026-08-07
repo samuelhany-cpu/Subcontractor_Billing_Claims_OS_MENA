@@ -19,6 +19,7 @@ const sourceLabels: Readonly<Record<ExpenseSource, string>> = {
 function pageHref(query: ExpenseListQuery, page: number): string {
   const parameters = new URLSearchParams({
     sort: query.sort,
+    status: query.status,
     page: String(page),
     pageSize: String(query.pageSize),
   });
@@ -47,11 +48,13 @@ export default async function ExpensesPage({
   const raw = await searchParams;
   const query = ExpenseListQuerySchema.catch({
     sort: 'NEWEST',
+    status: 'ACTIVE',
     page: 1,
     pageSize: 25,
     paymentMethod: undefined,
     search: undefined,
   }).parse(raw);
+
   const [result, projects, categories, payees] = await Promise.all([
     listExpenses(query),
     listProjects('ALL'),
@@ -186,6 +189,14 @@ export default async function ExpensesPage({
             ))}
           </select>
         </div>
+        <div className="field">
+          <label htmlFor="filter-status">الحالة</label>
+          <select id="filter-status" name="status" defaultValue={query.status}>
+            <option value="ACTIVE">النشطة فقط</option>
+            <option value="DELETED">سلة المهملات (المحذوفة)</option>
+            <option value="ALL">كل المصروفات</option>
+          </select>
+        </div>
         <div className="field expense-search-field">
           <label htmlFor="filter-search">البحث</label>
           <input
@@ -219,65 +230,79 @@ export default async function ExpensesPage({
               ? 'لا توجد مصروفات بعد'
               : 'لا توجد نتائج مطابقة'}
           </h2>
-          <p>أضف أول مصروف أو عدّل الفلاتر. السجلات المحذوفة لا تظهر هنا.</p>
+          <p>
+            أضف أول مصروف أو عدّل الفلاتر. اختر سلة المهملات لعرض المصروفات
+            المحذوفة.
+          </p>
         </section>
       ) : (
         <section className="expense-list" aria-label="قائمة المصروفات">
-          {result.items.map((expense) => (
-            <article className="expense-card" key={expense.id}>
-              <div className="expense-card-heading">
-                <div>
-                  <span className="source-badge">
-                    {sourceLabels[expense.source]}
+          {result.items.map((expense) => {
+            const isDeleted = expense.deletedAt !== null;
+            return (
+              <article
+                className={`expense-card${isDeleted ? ' deleted-card' : ''}`}
+                key={expense.id}
+              >
+                <div className="expense-card-heading">
+                  <div>
+                    {isDeleted ? (
+                      <span className="source-badge deleted">محذوف</span>
+                    ) : (
+                      <span className="source-badge">
+                        {sourceLabels[expense.source]}
+                      </span>
+                    )}
+                    <h2>
+                      <Link href={`/expenses/${expense.id}`}>
+                        {expense.description}
+                      </Link>
+                    </h2>
+                    <p>
+                      {expense.project.name} — {formatDate(expense.expenseDate)}
+                    </p>
+                  </div>
+                  <strong className="expense-amount" dir="ltr">
+                    {formatMoney(expense.amount)}
+                  </strong>
+                </div>
+                <dl className="expense-meta">
+                  <div>
+                    <dt>الفئة</dt>
+                    <dd>{expense.category?.name ?? 'غير مصنف'}</dd>
+                  </div>
+                  <div>
+                    <dt>التصنيف الفرعي</dt>
+                    <dd>{expense.subcategory?.name ?? 'غير محدد'}</dd>
+                  </div>
+                  <div>
+                    <dt>المورد أو الصنايعي</dt>
+                    <dd>{expense.payee?.name ?? 'غير محدد'}</dd>
+                  </div>
+                  <div>
+                    <dt>طريقة الدفع</dt>
+                    <dd>{expense.paymentMethod ?? 'غير محددة'}</dd>
+                  </div>
+                </dl>
+                <div className="expense-card-actions">
+                  <span>
+                    {expense.attachments.length > 0
+                      ? `${expense.attachments.length} مرفق`
+                      : 'بدون مرفقات'}
                   </span>
-                  <h2>
-                    <Link href={`/expenses/${expense.id}`}>
-                      {expense.description}
-                    </Link>
-                  </h2>
-                  <p>
-                    {expense.project.name} — {formatDate(expense.expenseDate)}
-                  </p>
+                  <Link
+                    className="button button-quiet"
+                    href={`/expenses/${expense.id}`}
+                  >
+                    {isDeleted ? 'عرض واستعادة' : 'عرض وتعديل'}
+                  </Link>
                 </div>
-                <strong className="expense-amount" dir="ltr">
-                  {formatMoney(expense.amount)}
-                </strong>
-              </div>
-              <dl className="expense-meta">
-                <div>
-                  <dt>الفئة</dt>
-                  <dd>{expense.category?.name ?? 'غير مصنف'}</dd>
-                </div>
-                <div>
-                  <dt>التصنيف الفرعي</dt>
-                  <dd>{expense.subcategory?.name ?? 'غير محدد'}</dd>
-                </div>
-                <div>
-                  <dt>المورد أو الصنايعي</dt>
-                  <dd>{expense.payee?.name ?? 'غير محدد'}</dd>
-                </div>
-                <div>
-                  <dt>طريقة الدفع</dt>
-                  <dd>{expense.paymentMethod ?? 'غير محددة'}</dd>
-                </div>
-              </dl>
-              <div className="expense-card-actions">
-                <span>
-                  {expense.attachments.length > 0
-                    ? `${expense.attachments.length} مرفق`
-                    : 'بدون مرفقات'}
-                </span>
-                <Link
-                  className="button button-quiet"
-                  href={`/expenses/${expense.id}`}
-                >
-                  عرض وتعديل
-                </Link>
-              </div>
-            </article>
-          ))}
+              </article>
+            );
+          })}
         </section>
       )}
+
       {result.pagination.totalPages > 1 && (
         <nav className="pagination" aria-label="صفحات المصروفات">
           {query.page > 1 && (

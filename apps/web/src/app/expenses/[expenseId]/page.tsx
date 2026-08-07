@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { updateExpenseAction, uploadAttachmentAction } from '../actions';
 import { AttachmentForm } from '@/components/expenses/attachment-form';
 import { ExpenseForm } from '@/components/expenses/expense-form';
+import { ExpenseStateControl } from '@/components/expenses/expense-state-control';
 import { listCategories } from '@/lib/categories-api';
 import { listPayees } from '@/lib/payees-api';
 import { formatDate, formatMoney } from '@/lib/project-format';
@@ -28,6 +29,7 @@ export default async function ExpenseDetailPage({
     listPayees('ALL'),
   ]);
   const archived = expense.project.status === 'ARCHIVED';
+  const isDeleted = expense.deletedAt !== null;
   return (
     <div className="page-stack expense-detail" dir="rtl">
       <Link className="back-link" href="/expenses">
@@ -36,7 +38,10 @@ export default async function ExpenseDetailPage({
       <section className="detail-heading">
         <div>
           <p className="eyebrow">{expense.project.name}</p>
-          <h1>{expense.description}</h1>
+          <h1>
+            {expense.description}{' '}
+            {isDeleted && <span className="source-badge deleted">محذوف</span>}
+          </h1>
           <p>
             {formatDate(expense.expenseDate)} —{' '}
             {expense.category?.name ?? 'غير مصنف'}
@@ -46,12 +51,24 @@ export default async function ExpenseDetailPage({
           {formatMoney(expense.amount)}
         </strong>
       </section>
+      {isDeleted && (
+        <p className="deleted-banner" role="alert">
+          المصروف محذوف وموجود في سلة المهملات. استعد المصروف ليعود إلى الحسابات
+          والإجماليات.
+        </p>
+      )}
       {archived && (
         <p className="readonly-notice">
           المشروع مؤرشف. المصروف والمرفقات قابلان للقراءة، ويلزم استعادة المشروع
           قبل أي تعديل أو إضافة مرفق.
         </p>
       )}
+      <ExpenseStateControl
+        archived={archived}
+        expenseId={expense.id}
+        isDeleted={isDeleted}
+      />
+
       <section className="expense-detail-grid">
         <div>
           <span>المورد أو الصنايعي</span>
@@ -122,7 +139,7 @@ export default async function ExpenseDetailPage({
           )}
         </section>
       )}
-      {!archived && (
+      {!archived && !isDeleted && (
         <section className="edit-panel">
           <h2>تعديل المصروف</h2>
           <ExpenseForm
@@ -163,7 +180,7 @@ export default async function ExpenseDetailPage({
             ))}
           </ul>
         )}
-        {!archived && expense.attachments.length < 10 && (
+        {!archived && !isDeleted && expense.attachments.length < 10 && (
           <AttachmentForm
             action={uploadAttachmentAction.bind(null, expense.id)}
           />

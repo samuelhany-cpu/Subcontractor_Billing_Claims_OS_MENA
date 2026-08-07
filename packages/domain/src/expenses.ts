@@ -9,8 +9,10 @@ import {
 
 export const expenseSources = ['WEB', 'TELEGRAM', 'EXCEL_IMPORT'] as const;
 export const expenseSorts = ['NEWEST', 'OLDEST'] as const;
+export const expenseStatuses = ['ACTIVE', 'DELETED', 'ALL'] as const;
 export const ExpenseSourceSchema = z.enum(expenseSources);
 export const ExpenseSortSchema = z.enum(expenseSorts);
+export const ExpenseStatusSchema = z.enum(expenseStatuses);
 export const ExpenseIdSchema = z.uuid('معرّف المصروف غير صحيح');
 export const AttachmentIdSchema = z.uuid('معرّف المرفق غير صحيح');
 
@@ -141,6 +143,7 @@ export const ExpenseListQuerySchema = z
     payeeId: PayeeIdSchema.optional(),
     paymentMethod: z.string().trim().max(120).optional(),
     source: ExpenseSourceSchema.optional(),
+    status: ExpenseStatusSchema.default('ACTIVE'),
     search: z.string().trim().max(200).optional(),
     sort: ExpenseSortSchema.default('NEWEST'),
     page: positiveInteger(1),
@@ -159,6 +162,7 @@ export const ExpenseListQuerySchema = z
 
 export type ExpenseSource = z.infer<typeof ExpenseSourceSchema>;
 export type ExpenseSort = z.infer<typeof ExpenseSortSchema>;
+export type ExpenseStatus = z.infer<typeof ExpenseStatusSchema>;
 export type CreateExpenseRequest = z.infer<typeof CreateExpenseSchema>;
 export type UpdateExpenseRequest = z.infer<typeof UpdateExpenseSchema>;
 export type ExpenseListQuery = z.infer<typeof ExpenseListQuerySchema>;
@@ -215,6 +219,7 @@ export interface ExpenseResponse {
   readonly telegramChatId: string | null;
   readonly telegramMsgId: string | null;
   readonly attachments: readonly AttachmentMetadata[];
+  readonly deletedAt: string | null;
   readonly createdAt: string;
   readonly updatedAt: string;
 }

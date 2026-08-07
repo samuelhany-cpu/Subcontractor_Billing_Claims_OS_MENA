@@ -9,14 +9,18 @@ describe('TransferForm', () => {
       name: 'مشروع البرج',
       status: 'ACTIVE' as const,
       openingBalance: '100000.00',
+      openingBalanceDate: '2026-01-01',
       openingDate: '2026-01-01',
+      archivedAt: null,
       createdAt: '2026-01-01',
       updatedAt: '2026-01-01',
+
       totals: {
         totalIncomingTransfers: '0.00',
         totalFunding: '100000.00',
         totalExpenses: '0.00',
         availableBalance: '100000.00',
+        expenseCount: 0,
       },
     },
   ];

@@ -87,11 +87,18 @@ test('Expense update is strict, non-empty, and permits optional clears', () => {
 test('Expense list applies approved defaults and trims empty search', () => {
   assert.deepEqual(ExpenseListQuerySchema.parse({}), {
     sort: 'NEWEST',
+    status: 'ACTIVE',
     page: 1,
     pageSize: 25,
     paymentMethod: undefined,
     search: undefined,
   });
+  assert.equal(
+    ExpenseListQuerySchema.parse({ status: 'DELETED' }).status,
+    'DELETED',
+  );
+  assert.equal(ExpenseListQuerySchema.parse({ status: 'ALL' }).status, 'ALL');
+
   assert.equal(
     ExpenseListQuerySchema.safeParse({ pageSize: '101' }).success,
     false,

@@ -583,41 +583,98 @@ describe('Expenses API against isolated PostgreSQL and private MinIO', () => {
       .expect(200);
   });
 
-  it('hides deleted fixtures, exposes no delete/restore API, and keeps audit immutable', async () => {
-    const deleted = await prisma.expense.findFirstOrThrow({
+  it('performs soft-delete, restore, status filtering, and keeps audit immutable', async () => {
+    const deletedFixture = await prisma.expense.findFirstOrThrow({
       where: { description: 'Deleted fixture' },
     });
+
+    // 1. GET /expenses/{deletedId} returns 200 with deletedAt timestamp
+    const deletedRes = await request(app.getHttpServer())
+      .get(`/api/v1/expenses/${deletedFixture.id}`)
+      .expect(200);
+    expect((deletedRes.body as ExpenseResponse).deletedAt).not.toBeNull();
+
+    // 2. Soft-delete an active expense via POST /expenses/{id}/delete
+    const deleteRes = await request(app.getHttpServer())
+      .post(`/api/v1/expenses/${manualExpenseId}/delete`)
+      .set(CORRELATION_HEADER, 'expense-delete-manual')
+      .expect(200);
+    const deletedExpense = deleteRes.body as ExpenseResponse;
+    expect(deletedExpense.deletedAt).not.toBeNull();
+
+    // 3. Repeated delete returns 409 Conflict (EXPENSE_ALREADY_DELETED)
     await request(app.getHttpServer())
-      .get(`/api/v1/expenses/${deleted.id}`)
-      .expect(404);
-    await request(app.getHttpServer())
-      .patch(`/api/v1/expenses/${deleted.id}`)
-      .send({ description: 'Must not change' })
-      .expect(404);
-    await request(app.getHttpServer())
-      .delete(`/api/v1/expenses/${manualExpenseId}`)
-      .expect(404);
+      .post(`/api/v1/expenses/${manualExpenseId}/delete`)
+      .expect(409);
+
+    // 4. GET /expenses with status=ACTIVE excludes soft-deleted expense
+    const activeList = await request(app.getHttpServer())
+      .get('/api/v1/expenses')
+      .query({ projectId, status: 'ACTIVE' })
+      .expect(200);
+    const activeItems = (activeList.body as ExpenseListResponse).items;
+    expect(activeItems.find((e) => e.id === manualExpenseId)).toBeUndefined();
+
+    // 5. GET /expenses with status=DELETED (Recycle Bin) returns soft-deleted expenses
+    const deletedList = await request(app.getHttpServer())
+      .get('/api/v1/expenses')
+      .query({ projectId, status: 'DELETED' })
+      .expect(200);
+    const deletedItems = (deletedList.body as ExpenseListResponse).items;
+    expect(deletedItems.find((e) => e.id === manualExpenseId)).toBeDefined();
+
+    // 6. Restore the soft-deleted expense via POST /expenses/{id}/restore
+    const restoreRes = await request(app.getHttpServer())
+      .post(`/api/v1/expenses/${manualExpenseId}/restore`)
+      .set(CORRELATION_HEADER, 'expense-restore-manual')
+      .expect(200);
+    const restoredExpense = restoreRes.body as ExpenseResponse;
+    expect(restoredExpense.deletedAt).toBeNull();
+
+    // 7. Repeated restore returns 409 Conflict (EXPENSE_ALREADY_ACTIVE)
     await request(app.getHttpServer())
       .post(`/api/v1/expenses/${manualExpenseId}/restore`)
-      .expect(404);
+      .expect(409);
 
-    const event = await prisma.auditEvent.findFirstOrThrow({
+    // 8. Archived project guard rejects delete and restore operations
+    await request(app.getHttpServer())
+      .post(`/api/v1/projects/${projectId}/archive`)
+      .expect(200);
+    await request(app.getHttpServer())
+      .post(`/api/v1/expenses/${manualExpenseId}/delete`)
+      .expect(409);
+    await request(app.getHttpServer())
+      .post(`/api/v1/expenses/${manualExpenseId}/restore`)
+      .expect(409);
+    await request(app.getHttpServer())
+      .post(`/api/v1/projects/${projectId}/restore`)
+      .expect(200);
+
+    // 9. Verify Audit events for delete and restore
+    const deleteAudit = await prisma.auditEvent.findFirstOrThrow({
       where: {
         entityType: 'Expense',
-        correlationId: 'expense-update-calculated',
+        correlationId: 'expense-delete-manual',
       },
     });
-    expect(event.afterData).toMatchObject({
-      operation: 'update',
-      amount: '1.01',
-      source: 'WEB',
+    expect(deleteAudit.action).toBe('DELETE');
+
+    const restoreAudit = await prisma.auditEvent.findFirstOrThrow({
+      where: {
+        entityType: 'Expense',
+        correlationId: 'expense-restore-manual',
+      },
     });
+    expect(restoreAudit.action).toBe('RESTORE');
+
+    // 10. Verify Audit immutability trigger
     await expect(
       prisma.$executeRawUnsafe(
         'UPDATE "AuditEvent" SET "entityType" = \'Changed\' WHERE "id" = $1',
-        event.id,
+        deleteAudit.id,
       ),
     ).rejects.toThrow();
+
     expect(await prisma.transfer.count()).toBe(0);
     expect(await prisma.importJob.count()).toBe(0);
   });

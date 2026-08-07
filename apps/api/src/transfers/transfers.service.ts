@@ -27,8 +27,9 @@ export function mapTransferResponse(record: TransferRecord): TransferResponse {
     project: {
       id: record.project.id,
       name: record.project.name,
-      status: record.project.status as 'ACTIVE' | 'ARCHIVED',
+      status: record.project.status,
     },
+
     transferDate: record.transferDate.toISOString().slice(0, 10),
     amount: serializeMoney(record.amount),
     source: record.source as 'WEB' | 'TELEGRAM' | 'EXCEL_IMPORT',

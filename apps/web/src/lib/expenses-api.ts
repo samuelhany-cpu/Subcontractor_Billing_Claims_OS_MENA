@@ -71,6 +71,7 @@ export function listExpenses(
     'payeeId',
     'paymentMethod',
     'source',
+    'status',
     'search',
   ] as const) {
     const value = query[key];
@@ -94,6 +95,20 @@ export function updateExpense(expenseId: string, input: UpdateExpenseRequest) {
   return jsonRequest<ExpenseResponse>(
     `/expenses/${encodeURIComponent(expenseId)}`,
     { method: 'PATCH', body: JSON.stringify(input) },
+  );
+}
+
+export function deleteExpense(expenseId: string): Promise<ExpenseResponse> {
+  return jsonRequest<ExpenseResponse>(
+    `/expenses/${encodeURIComponent(expenseId)}/delete`,
+    { method: 'POST' },
+  );
+}
+
+export function restoreExpense(expenseId: string): Promise<ExpenseResponse> {
+  return jsonRequest<ExpenseResponse>(
+    `/expenses/${encodeURIComponent(expenseId)}/restore`,
+    { method: 'POST' },
   );
 }
 

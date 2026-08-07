@@ -20,6 +20,20 @@ export function expenseNotFound(): NotFoundException {
   });
 }
 
+export function expenseAlreadyDeleted(): ConflictException {
+  return new ConflictException({
+    code: 'EXPENSE_ALREADY_DELETED',
+    message: 'Expense is already soft-deleted.',
+  });
+}
+
+export function expenseAlreadyActive(): ConflictException {
+  return new ConflictException({
+    code: 'EXPENSE_ALREADY_ACTIVE',
+    message: 'Expense is already active.',
+  });
+}
+
 export function invalidExpenseAmount(message: string): BadRequestException {
   return new BadRequestException({
     code: 'EXPENSE_AMOUNT_INVALID',

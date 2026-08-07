@@ -305,7 +305,11 @@ paths:
           name: source
           schema: { $ref: "#/components/schemas/ExpenseSource" }
         - in: query
+          name: status
+          schema: { $ref: "#/components/schemas/ExpenseStatus" }
+        - in: query
           name: search
+
           schema: { type: string, maxLength: 200 }
         - in: query
           name: sort
@@ -369,7 +373,36 @@ paths:
         "400": { $ref: "#/components/responses/BadRequest" }
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { $ref: "#/components/responses/Conflict" }
+  /expenses/{expenseId}/delete:
+    post:
+      operationId: deleteExpense
+      summary: Soft-delete an expense
+      parameters: [{ $ref: "#/components/parameters/ExpenseId" }]
+      responses:
+        "200":
+          description: Expense soft-deleted
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Expense" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /expenses/{expenseId}/restore:
+    post:
+      operationId: restoreExpense
+      summary: Restore a soft-deleted expense
+      parameters: [{ $ref: "#/components/parameters/ExpenseId" }]
+      responses:
+        "200":
+          description: Expense restored
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Expense" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
   /expenses/{expenseId}/attachments:
+
     get:
       operationId: listExpenseAttachments
       parameters: [{ $ref: "#/components/parameters/ExpenseId" }]
@@ -1066,10 +1099,14 @@ components:
           type: string
           pattern: '^[a-f0-9]{64}$'
         createdAt: { type: string, format: date-time }
+    ExpenseStatus:
+      type: string
+      enum: [ACTIVE, DELETED, ALL]
+      default: ACTIVE
     Expense:
       type: object
       additionalProperties: false
-      required: [id, project, expenseDate, description, category, subcategory, payee, invoiceNumber, quantity, unit, unitPrice, amount, paymentMethod, notes, source, importFileName, importSheet, importRow, telegramChatId, telegramMsgId, attachments, createdAt, updatedAt]
+      required: [id, project, expenseDate, description, category, subcategory, payee, invoiceNumber, quantity, unit, unitPrice, amount, paymentMethod, notes, source, importFileName, importSheet, importRow, telegramChatId, telegramMsgId, attachments, deletedAt, createdAt, updatedAt]
       properties:
         id: { type: string, format: uuid }
         project: { $ref: "#/components/schemas/ExpenseProjectSummary" }
@@ -1110,8 +1147,10 @@ components:
           type: array
           maxItems: 10
           items: { $ref: "#/components/schemas/Attachment" }
+        deletedAt: { type: [string, "null"], format: date-time }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
+
     Pagination:
       type: object
       additionalProperties: false

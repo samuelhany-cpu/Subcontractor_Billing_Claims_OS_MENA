@@ -87,6 +87,16 @@ export class ExpensesRepository {
     });
   }
 
+  findExpandedWithDeleted(
+    expenseId: string,
+    client: ExpenseDataClient = this.database,
+  ): Promise<ExpandedExpense | null> {
+    return client.expense.findFirst({
+      where: { id: expenseId },
+      include: expandedExpense,
+    });
+  }
+
   findCategory(
     categoryId: string,
     client: ExpenseDataClient,
@@ -146,6 +156,13 @@ export class ExpensesRepository {
   }
 
   private listWhere(query: ExpenseListQuery): Prisma.ExpenseWhereInput {
+    const statusCondition =
+      query.status === 'ACTIVE'
+        ? { deletedAt: null }
+        : query.status === 'DELETED'
+          ? { deletedAt: { not: null } }
+          : {};
+
     const search =
       query.search === undefined
         ? {}
@@ -167,7 +184,7 @@ export class ExpensesRepository {
             ],
           };
     return {
-      deletedAt: null,
+      ...statusCondition,
       ...(query.projectId === undefined ? {} : { projectId: query.projectId }),
       ...(query.from === undefined && query.to === undefined
         ? {}

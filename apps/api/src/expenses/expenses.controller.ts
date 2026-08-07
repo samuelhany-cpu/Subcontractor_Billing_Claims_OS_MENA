@@ -72,6 +72,22 @@ export class ExpensesController {
     );
   }
 
+  @Post(':expenseId/delete')
+  delete(@Param('expenseId') expenseId: string): Promise<ExpenseResponse> {
+    return this.expenses.delete(
+      parseExpenseRequest(ExpenseIdSchema, expenseId),
+      this.correlation.getCorrelationId(),
+    );
+  }
+
+  @Post(':expenseId/restore')
+  restore(@Param('expenseId') expenseId: string): Promise<ExpenseResponse> {
+    return this.expenses.restore(
+      parseExpenseRequest(ExpenseIdSchema, expenseId),
+      this.correlation.getCorrelationId(),
+    );
+  }
+
   @Get(':expenseId/attachments')
   listAttachments(
     @Param('expenseId') expenseId: string,

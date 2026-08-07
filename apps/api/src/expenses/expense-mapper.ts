@@ -79,13 +79,14 @@ export function mapExpense(expense: ExpandedExpense): ExpenseResponse {
     telegramChatId: expense.telegramChatId,
     telegramMsgId: expense.telegramMsgId,
     attachments: expense.attachments.map(mapAttachment),
+    deletedAt: expense.deletedAt ? expense.deletedAt.toISOString() : null,
     createdAt: expense.createdAt.toISOString(),
     updatedAt: expense.updatedAt.toISOString(),
   };
 }
 
 export function expenseSnapshot(
-  operation: 'create' | 'update',
+  operation: 'create' | 'update' | 'delete' | 'restore',
   expense: Expense,
 ): Readonly<Record<string, unknown>> {
   return {
@@ -105,5 +106,6 @@ export function expenseSnapshot(
     paymentMethod: expense.paymentMethod,
     notes: expense.notes,
     source: expense.source,
+    deletedAt: expense.deletedAt ? expense.deletedAt.toISOString() : null,
   };
 }

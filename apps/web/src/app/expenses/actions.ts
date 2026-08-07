@@ -9,7 +9,9 @@ import {
 } from '@/lib/expense-form-state';
 import {
   createExpense,
+  deleteExpense,
   ExpensesApiError,
+  restoreExpense,
   updateExpense,
   uploadExpenseAttachment,
 } from '@/lib/expenses-api';
@@ -30,8 +32,11 @@ function apiMessage(error: unknown): string {
   if (error instanceof ExpensesApiError) {
     const messages: Readonly<Record<string, string>> = {
       EXPENSE_NOT_FOUND: 'تعذر العثور على المصروف.',
+      EXPENSE_ALREADY_DELETED: 'المصروف محذوف بالفعل وفي سلة المهملات.',
+      EXPENSE_ALREADY_ACTIVE: 'المصروف نشط بالفعل.',
       PROJECT_NOT_FOUND: 'تعذر العثور على المشروع.',
       PROJECT_ARCHIVED: 'المشروع مؤرشف وللقراءة فقط حتى تتم استعادته.',
+
       EXPENSE_AMOUNT_INVALID: 'راجع القيمة أو الكمية وسعر الوحدة.',
       EXPENSE_CATEGORY_NOT_FOUND: 'الفئة المحددة غير موجودة.',
       EXPENSE_CATEGORY_INACTIVE: 'الفئة المحددة غير نشطة.',
@@ -160,5 +165,45 @@ export async function uploadAttachmentAction(
   return {
     ...emptyExpenseFormState,
     success: 'تمت إضافة المرفق بصورة خاصة وآمنة.',
+  };
+}
+
+export async function deleteExpenseAction(
+  expenseId: string,
+  _state: ExpenseFormState,
+  _formData: FormData,
+): Promise<ExpenseFormState> {
+  try {
+    await deleteExpense(expenseId);
+  } catch (error: unknown) {
+    return { error: apiMessage(error), fieldErrors: {}, success: null };
+  }
+  revalidatePath('/expenses');
+  revalidatePath(`/expenses/${expenseId}`);
+  revalidatePath('/projects');
+  revalidatePath('/payees');
+  return {
+    ...emptyExpenseFormState,
+    success: 'تم نقل المصروف إلى سلة المهملات وتحديث الإجماليات.',
+  };
+}
+
+export async function restoreExpenseAction(
+  expenseId: string,
+  _state: ExpenseFormState,
+  _formData: FormData,
+): Promise<ExpenseFormState> {
+  try {
+    await restoreExpense(expenseId);
+  } catch (error: unknown) {
+    return { error: apiMessage(error), fieldErrors: {}, success: null };
+  }
+  revalidatePath('/expenses');
+  revalidatePath(`/expenses/${expenseId}`);
+  revalidatePath('/projects');
+  revalidatePath('/payees');
+  return {
+    ...emptyExpenseFormState,
+    success: 'تمت استعادة المصروف بنجاح وتحديث الإجماليات.',
   };
 }

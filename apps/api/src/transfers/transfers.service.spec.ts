@@ -1,20 +1,20 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { ConflictException, NotFoundException } from '@nestjs/common';
-import { TransfersService } from './transfers.service';
-import { TransfersRepository } from './transfers.repository';
-import { ProjectStateService } from '../projects/project-state.service';
-import { AuditService } from '../audit/audit.service';
-import { CorrelationContext } from '../observability/correlation-context';
-import { DATABASE_CLIENT } from '../infrastructure/database/database.service';
+/* eslint-disable @typescript-eslint/unbound-method, @typescript-eslint/no-unsafe-assignment */
+import { NotFoundException } from '@nestjs/common';
 
+import { Test, TestingModule } from '@nestjs/testing';
 import { Prisma } from '@prisma/client';
+import { AuditService } from '../audit/audit.service';
+import { DATABASE_CLIENT } from '../infrastructure/database/database.service';
+import { CorrelationContext } from '../observability/correlation-context';
+import { ProjectStateService } from '../projects/project-state.service';
+import { TransfersRepository } from './transfers.repository';
+import { TransfersService } from './transfers.service';
 
 describe('TransfersService', () => {
   let service: TransfersService;
   let repository: jest.Mocked<TransfersRepository>;
   let projectState: jest.Mocked<ProjectStateService>;
   let audit: jest.Mocked<AuditService>;
-  let db: jest.Mocked<DatabaseService>;
 
   const mockTransferRecord = {
     id: 't0000000-0000-0000-0000-000000000001',
@@ -49,7 +49,9 @@ describe('TransfersService', () => {
       getCorrelationId: jest.fn().mockReturnValue('test-correlation-id'),
     };
     const mockDb = {
-      $transaction: jest.fn((cb) => cb(mockDb)),
+      $transaction: jest.fn((cb: (tx: unknown) => Promise<unknown>) =>
+        cb(mockDb),
+      ),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -67,11 +69,22 @@ describe('TransfersService', () => {
     repository = module.get(TransfersRepository);
     projectState = module.get(ProjectStateService);
     audit = module.get(AuditService);
-    db = module.get(DatabaseService);
   });
 
+  const mockProjectRecord = {
+    id: 'p0000000-0000-0000-0000-000000000001',
+    name: 'مشروع برج الأمل',
+    status: 'ACTIVE' as const,
+    openingBalance: new Prisma.Decimal('0.00'),
+    openingBalanceDate: null,
+    archivedAt: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+
   it('creates a transfer successfully and writes audit snapshot', async () => {
-    projectState.assertAcceptsWrites.mockResolvedValue();
+    projectState.assertAcceptsWrites.mockResolvedValue(mockProjectRecord);
+
     repository.create.mockResolvedValue(mockTransferRecord);
 
     const result = await service.create({
@@ -101,7 +114,8 @@ describe('TransfersService', () => {
   });
 
   it('performs soft-delete and appends DELETE audit snapshot', async () => {
-    projectState.assertAcceptsWrites.mockResolvedValue();
+    projectState.assertAcceptsWrites.mockResolvedValue(mockProjectRecord);
+
     repository.findById.mockResolvedValue(mockTransferRecord);
     const deletedRecord = {
       ...mockTransferRecord,
@@ -127,7 +141,8 @@ describe('TransfersService', () => {
   });
 
   it('restores a soft-deleted transfer successfully', async () => {
-    projectState.assertAcceptsWrites.mockResolvedValue();
+    projectState.assertAcceptsWrites.mockResolvedValue(mockProjectRecord);
+
     const deletedRecord = {
       ...mockTransferRecord,
       deletedAt: new Date('2026-08-04T12:00:00.000Z'),
