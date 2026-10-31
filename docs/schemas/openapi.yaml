@@ -5,6 +5,15 @@ info:
 servers:
   - url: /api/v1
 paths:
+  /dashboard:
+    get:
+      operationId: getGlobalDashboard
+      responses:
+        "200":
+          description: Aggregated dashboard for all active projects
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GlobalDashboard" }
   /projects:
     get:
       operationId: listProjects
@@ -97,7 +106,7 @@ paths:
       parameters: [{ $ref: "#/components/parameters/ProjectId" }]
       responses:
         "200":
-          description: Minimal project summary returned without charts
+          description: Project financial summary and dashboard analytics
           content:
             application/json:
               schema: { $ref: "#/components/schemas/ProjectDashboard" }
@@ -905,11 +914,90 @@ components:
       allOf:
         - { $ref: "#/components/schemas/ProjectTotals" }
         - type: object
-          required: [projectId, status, openingBalance]
+          required: [projectId, status, openingBalance, categoryTotals, weeklyExpenses, topPayees, recentExpenses, recentTransfers]
           properties:
             projectId: { type: string, format: uuid }
             status: { $ref: "#/components/schemas/ProjectStatus" }
             openingBalance: { $ref: "#/components/schemas/SignedMoney" }
+            categoryTotals:
+              type: array
+              items: { $ref: "#/components/schemas/DashboardCategoryTotal" }
+            weeklyExpenses:
+              type: array
+              items: { $ref: "#/components/schemas/DashboardTrendPoint" }
+            topPayees:
+              type: array
+              items: { $ref: "#/components/schemas/DashboardPayeeTotal" }
+            recentExpenses:
+              type: array
+              items: { $ref: "#/components/schemas/DashboardExpense" }
+            recentTransfers:
+              type: array
+              items: { $ref: "#/components/schemas/DashboardTransfer" }
+    DashboardCategoryTotal:
+      type: object
+      required: [categoryId, categoryName, amount, expenseCount]
+      properties:
+        categoryId: { type: [string, "null"], format: uuid }
+        categoryName: { type: string }
+        amount: { $ref: "#/components/schemas/Money" }
+        expenseCount: { type: integer, minimum: 0 }
+    DashboardTrendPoint:
+      type: object
+      required: [periodStart, amount]
+      properties:
+        periodStart: { type: string, format: date }
+        amount: { $ref: "#/components/schemas/Money" }
+    DashboardPayeeTotal:
+      type: object
+      required: [payeeId, payeeName, amount]
+      properties:
+        payeeId: { type: string, format: uuid }
+        payeeName: { type: string }
+        amount: { $ref: "#/components/schemas/Money" }
+    DashboardExpense:
+      type: object
+      required: [id, expenseDate, description, amount, categoryName, payeeName]
+      properties:
+        id: { type: string, format: uuid }
+        expenseDate: { type: string, format: date }
+        description: { type: string }
+        amount: { $ref: "#/components/schemas/Money" }
+        categoryName: { type: string }
+        payeeName: { type: [string, "null"] }
+    DashboardTransfer:
+      type: object
+      required: [id, transferDate, amount]
+      properties:
+        id: { type: string, format: uuid }
+        transferDate: { type: string, format: date }
+        amount: { $ref: "#/components/schemas/Money" }
+    GlobalDashboard:
+      allOf:
+        - { $ref: "#/components/schemas/ProjectTotals" }
+        - type: object
+          required: [activeProjectCount, archivedProjectCount, projects, categoryTotals, weeklyExpenses, topPayees, recentExpenses, recentTransfers]
+          properties:
+            activeProjectCount: { type: integer, minimum: 0 }
+            archivedProjectCount: { type: integer, minimum: 0 }
+            projects:
+              type: array
+              items: { $ref: "#/components/schemas/Project" }
+            categoryTotals:
+              type: array
+              items: { $ref: "#/components/schemas/DashboardCategoryTotal" }
+            weeklyExpenses:
+              type: array
+              items: { $ref: "#/components/schemas/DashboardTrendPoint" }
+            topPayees:
+              type: array
+              items: { $ref: "#/components/schemas/DashboardPayeeTotal" }
+            recentExpenses:
+              type: array
+              items: { $ref: "#/components/schemas/DashboardExpense" }
+            recentTransfers:
+              type: array
+              items: { $ref: "#/components/schemas/DashboardTransfer" }
     CreateProject:
       type: object
       additionalProperties: false
