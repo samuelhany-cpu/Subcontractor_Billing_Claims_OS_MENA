@@ -138,6 +138,21 @@ describe('parseApiEnvironment', () => {
     expectInvalid({ NODE_ENV: 'production' }, 'DATABASE_URL');
   });
 
+  it('rejects deployment-template credential placeholders in production', () => {
+    expectInvalid(
+      {
+        NODE_ENV: 'production',
+        DATABASE_URL:
+          'postgresql://claims_runtime:CHANGE_ME_DATABASE_PASSWORD@postgres:5432/claims_os',
+        REDIS_URL: 'redis://:CHANGE_ME_REDIS_PASSWORD@redis:6379/0',
+        OBJECT_STORAGE_ENDPOINT: 'http://minio:9000',
+        OBJECT_STORAGE_ACCESS_KEY: 'CHANGE_ME_MINIO_USER',
+        OBJECT_STORAGE_SECRET_KEY: 'CHANGE_ME_MINIO_PASSWORD',
+      },
+      'DATABASE_URL',
+    );
+  });
+
   it('rejects pretty logs in production before runtime startup', () => {
     expectInvalid(
       {
@@ -167,6 +182,52 @@ describe('parseApiEnvironment', () => {
         OBJECT_STORAGE_SECURE: 'true',
       },
       'REDIS_URL',
+    );
+  });
+
+  it('accepts private Docker service DNS names with non-default credentials', () => {
+    const config = parseApiEnvironment({
+      ...validEnvironment,
+      NODE_ENV: 'production',
+      API_HOST: '0.0.0.0',
+      API_PUBLIC_URL: 'http://api:4000',
+      WEB_URL: 'http://localhost:3000',
+      CORS_ORIGINS: 'http://localhost:3000',
+      DATABASE_URL:
+        'postgresql://claims_runtime:strong_database_secret@postgres:5432/claims_os',
+      REDIS_URL: 'redis://:strong_redis_secret@redis:6379/0',
+      OBJECT_STORAGE_ENDPOINT: 'http://minio:9000',
+      OBJECT_STORAGE_ACCESS_KEY: 'claims_runtime_minio',
+      OBJECT_STORAGE_SECRET_KEY: 'strong_storage_secret',
+    });
+
+    expect(config.database.url).toContain('@postgres:5432');
+    expect(config.redis.url).toContain('@redis:6379');
+    expect(config.objectStorage.endpoint).toBe('http://minio:9000');
+  });
+
+  it.each([
+    [
+      'DATABASE_URL',
+      { DATABASE_URL: 'postgresql://runtime:secret@127.0.0.1:5432/claims' },
+    ],
+    ['REDIS_URL', { REDIS_URL: 'redis://:secret@localhost:6379/0' }],
+    [
+      'OBJECT_STORAGE_ENDPOINT',
+      { OBJECT_STORAGE_ENDPOINT: 'http://[::1]:9000' },
+    ],
+  ])('rejects loopback production endpoint %s', (field, override) => {
+    expectInvalid(
+      {
+        NODE_ENV: 'production',
+        DATABASE_URL: 'postgresql://runtime:secret@postgres:5432/claims',
+        REDIS_URL: 'redis://:secret@redis:6379/0',
+        OBJECT_STORAGE_ENDPOINT: 'http://minio:9000',
+        OBJECT_STORAGE_ACCESS_KEY: 'runtime_access',
+        OBJECT_STORAGE_SECRET_KEY: 'runtime_secret',
+        ...override,
+      },
+      field,
     );
   });
 });

@@ -50,3 +50,6 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+      - name: Validate production-local Compose topology
+        run: docker compose --env-file .env.production.example -f docker-compose.production.yml config --quiet

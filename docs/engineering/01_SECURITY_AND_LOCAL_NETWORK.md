@@ -35,6 +35,13 @@ This is accepted as the current product decision. The UI must not pretend that u
 - Windows firewall rule must target Private network only.
 - Use a stable LAN hostname or DHCP reservation if needed for phone access.
 - The app must display the LAN URL in deployment documentation, not hard-code an IP.
+- Production-local Compose publishes only `web`. API, PostgreSQL, Redis, MinIO,
+  migration, and bucket-initialization services have no host port publications.
+- Default `WEB_BIND_ADDRESS=127.0.0.1` is deliberately loopback-only. Switching
+  it to `0.0.0.0` requires a Windows Firewall rule restricted to Private
+  networks and, preferably, the trusted local subnet.
+- `WEB_PUBLIC_URL`, `CORS_ORIGINS`, and Next.js Server Action allowed origins
+  must name the same chosen LAN hostname or IP. Wildcard origins are not used.
 
 ## n8n
 
@@ -43,6 +50,8 @@ This is accepted as the current product decision. The UI must not pretend that u
 - n8n credentials must use its credential store.
 - Application data writes occur through API calls.
 - Run n8n security audit after configuration.
+- n8n is deferred and is intentionally absent from the current production-local
+  Compose topology; no live Telegram/webhook behavior is enabled by deployment.
 
 ## Attachments
 

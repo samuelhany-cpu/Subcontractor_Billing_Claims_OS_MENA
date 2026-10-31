@@ -19,6 +19,13 @@
     "infra:reset": "docker compose down --volumes --remove-orphans",
     "infra:status": "docker compose ps",
     "infra:up": "docker compose up -d",
+    "prod:build": "docker compose --env-file .env.production -f docker-compose.production.yml build",
+    "prod:config": "docker compose --env-file .env.production -f docker-compose.production.yml config",
+    "prod:down": "docker compose --env-file .env.production -f docker-compose.production.yml down",
+    "prod:logs": "docker compose --env-file .env.production -f docker-compose.production.yml logs --tail=200 -f",
+    "prod:migrate": "docker compose --env-file .env.production -f docker-compose.production.yml run --rm migrate",
+    "prod:status": "docker compose --env-file .env.production -f docker-compose.production.yml ps",
+    "prod:up": "docker compose --env-file .env.production -f docker-compose.production.yml up -d --build",
     "lint": "turbo run lint",
     "test": "turbo run test",
     "typecheck": "turbo run typecheck"

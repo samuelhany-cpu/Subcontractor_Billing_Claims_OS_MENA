@@ -12,7 +12,7 @@ Modular monolith.
 - ORM: Prisma, matching the existing foundation.
 - Cache/transient state: Redis.
 - Attachments: MinIO through S3-compatible abstraction.
-- Automation: self-hosted n8n.
+- Automation: future self-hosted n8n integration (not part of the active runtime).
 - Local runtime: Docker Compose on Windows.
 - Spreadsheet generation/import: server-side library selected by the implementation team, with formula-safe tests.
 - Currency math: decimal library plus PostgreSQL `numeric`.
@@ -23,19 +23,16 @@ Modular monolith.
 Phone / LAN Browser
         |
         v
-Next.js Web (LAN published)
+Next.js Web (only published container port)
         |
         v
 NestJS API (internal Docker network)
    |        |          |
    v        v          v
 Postgres   Redis      MinIO
-        ^
-        |
-       n8n (internal API calls)
-        ^
-        |
-Telegram public webhook through a connectivity method not yet selected
+
+frontend network: web <-> api
+backend network (internal): api <-> postgres, redis, minio
 ```
 
 ## Exposure rules
@@ -43,8 +40,10 @@ Telegram public webhook through a connectivity method not yet selected
 - Web app is accessible on the private LAN.
 - API is not directly published to the LAN in production-local mode when reverse proxying through the web container is available.
 - PostgreSQL, Redis, and MinIO are not publicly exposed.
-- n8n editor UI binds to localhost/private administration only.
-- Only the required n8n webhook path may be exposed through the future tunnel/reverse proxy.
+- n8n and Telegram are not started by the production-local Compose file. Their
+  activation remains separately gated by OPEN-001 and OPEN-002.
+- The web process makes server-side API calls through `API_INTERNAL_URL`; a
+  browser never resolves a Docker service name or receives backend credentials.
 - No app login page, per owner decision.
 
 ## Modules

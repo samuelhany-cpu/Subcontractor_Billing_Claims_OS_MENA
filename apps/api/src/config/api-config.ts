@@ -10,6 +10,15 @@ const LOCAL_DEVELOPMENT_DEFAULTS = {
   storageSecretKey: 'claims_local_minio_secret',
 } as const;
 
+// Docker service DNS names (for example `postgres` and `minio`) are private to
+// the Compose network. They are valid production-local endpoints; only actual
+// loopback addresses would make a container connect back to itself.
+const LOOPBACK_HOSTS = new Set(['127.0.0.1', '[::1]', '::1', 'localhost']);
+
+function isProductionPlaceholder(value: string): boolean {
+  return value.toLowerCase().includes('change_me');
+}
+
 const nonEmptyString = z.string().trim().min(1, 'must not be empty');
 const urlString = z.string().trim().url('must be a valid URL');
 const portString = z
@@ -155,11 +164,10 @@ const rawEnvironmentSchema = z
     } catch {
       return;
     }
-    const localHosts = new Set(['127.0.0.1', 'localhost', 'minio', 'postgres']);
-
     if (
-      localHosts.has(databaseUrl.hostname) ||
-      databaseUrl.password === LOCAL_DEVELOPMENT_DEFAULTS.databasePassword
+      LOOPBACK_HOSTS.has(databaseUrl.hostname) ||
+      databaseUrl.password === LOCAL_DEVELOPMENT_DEFAULTS.databasePassword ||
+      isProductionPlaceholder(databaseUrl.password)
     ) {
       context.addIssue({
         code: 'custom',
@@ -169,8 +177,9 @@ const rawEnvironmentSchema = z
     }
 
     if (
-      localHosts.has(redisUrl.hostname) ||
-      redisUrl.password === LOCAL_DEVELOPMENT_DEFAULTS.redisPassword
+      LOOPBACK_HOSTS.has(redisUrl.hostname) ||
+      redisUrl.password === LOCAL_DEVELOPMENT_DEFAULTS.redisPassword ||
+      isProductionPlaceholder(redisUrl.password)
     ) {
       context.addIssue({
         code: 'custom',
@@ -179,7 +188,7 @@ const rawEnvironmentSchema = z
       });
     }
 
-    if (localHosts.has(storageUrl.hostname)) {
+    if (LOOPBACK_HOSTS.has(storageUrl.hostname)) {
       context.addIssue({
         code: 'custom',
         path: ['OBJECT_STORAGE_ENDPOINT'],
@@ -189,7 +198,8 @@ const rawEnvironmentSchema = z
 
     if (
       environment.OBJECT_STORAGE_ACCESS_KEY ===
-      LOCAL_DEVELOPMENT_DEFAULTS.storageAccessKey
+        LOCAL_DEVELOPMENT_DEFAULTS.storageAccessKey ||
+      isProductionPlaceholder(environment.OBJECT_STORAGE_ACCESS_KEY)
     ) {
       context.addIssue({
         code: 'custom',
@@ -200,7 +210,8 @@ const rawEnvironmentSchema = z
 
     if (
       environment.OBJECT_STORAGE_SECRET_KEY ===
-      LOCAL_DEVELOPMENT_DEFAULTS.storageSecretKey
+        LOCAL_DEVELOPMENT_DEFAULTS.storageSecretKey ||
+      isProductionPlaceholder(environment.OBJECT_STORAGE_SECRET_KEY)
     ) {
       context.addIssue({
         code: 'custom',

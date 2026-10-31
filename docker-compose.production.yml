@@ -1,0 +1,210 @@
+# Production-local topology. This intentionally does not extend docker-compose.yml:
+# development keeps its loopback-published infrastructure, while this file publishes
+# only the web application and reuses the same claims-os named volumes.
+name: claims-os
+
+services:
+  postgres:
+    image: postgres:16.14-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?Set POSTGRES_DB in .env.production}
+      POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in .env.production}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env.production}
+    volumes:
+      - claims_postgres_data:/var/lib/postgresql/data
+    networks:
+      - backend
+    healthcheck:
+      test:
+        ['CMD-SHELL', 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  redis:
+    image: redis:7.4.10-alpine
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env.production}
+    command:
+      [
+        'sh',
+        '-c',
+        'exec redis-server --appendonly yes --requirepass "$$REDIS_PASSWORD"',
+      ]
+    volumes:
+      - claims_redis_data:/data
+    networks:
+      - backend
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'redis-cli --no-auth-warning -a "$${REDIS_PASSWORD}" ping | grep PONG',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 5s
+
+  minio:
+    # Docker Hub withdrew these official images. Keep the registry override so a
+    # trusted local mirror can be used without editing the deployment topology.
+    image: ${MINIO_IMAGE:-quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z-cpuv1}
+    restart: unless-stopped
+    command: server /data --console-address ':9001'
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Set MINIO_ROOT_USER in .env.production}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD in .env.production}
+    volumes:
+      - claims_minio_data:/data
+    networks:
+      - backend
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'curl --fail --silent http://127.0.0.1:9000/minio/health/live',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 15s
+
+  minio-init:
+    image: ${MINIO_MC_IMAGE:-quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z-cpuv1}
+    restart: 'no'
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_BUCKET: ${MINIO_BUCKET:?Set MINIO_BUCKET in .env.production}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Set MINIO_ROOT_USER in .env.production}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD in .env.production}
+    networks:
+      - backend
+    entrypoint: ['/bin/sh', '-c']
+    command:
+      - >-
+        mc alias set local http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD" &&
+        mc mb --ignore-existing "local/$$MINIO_BUCKET" &&
+        mc anonymous set none "local/$$MINIO_BUCKET"
+
+  migrate:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      target: migration
+    restart: 'no'
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env.production}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - backend
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      target: runtime
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      SERVICE_NAME: claims-os-api
+      API_HOST: 0.0.0.0
+      API_PORT: 4000
+      API_PUBLIC_URL: http://api:4000
+      WEB_URL: ${WEB_PUBLIC_URL:?Set WEB_PUBLIC_URL in .env.production}
+      CORS_ORIGINS: ${WEB_PUBLIC_URL:?Set WEB_PUBLIC_URL in .env.production}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      LOG_FORMAT: json
+      REQUEST_LOGGING: 'true'
+      HEALTH_CHECK_TIMEOUT_MS: ${HEALTH_CHECK_TIMEOUT_MS:-1000}
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env.production}
+      REDIS_URL: ${REDIS_URL:?Set REDIS_URL in .env.production}
+      OBJECT_STORAGE_ENDPOINT: http://minio:9000
+      OBJECT_STORAGE_REGION: us-east-1
+      OBJECT_STORAGE_BUCKET: ${MINIO_BUCKET:?Set MINIO_BUCKET in .env.production}
+      OBJECT_STORAGE_ACCESS_KEY: ${MINIO_ROOT_USER:?Set MINIO_ROOT_USER in .env.production}
+      OBJECT_STORAGE_SECRET_KEY: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD in .env.production}
+      OBJECT_STORAGE_SECURE: 'false'
+      OBJECT_STORAGE_FORCE_PATH_STYLE: 'true'
+      ATTACHMENT_ALLOWED_MIME_TYPES: image/jpeg,image/png,image/webp,application/pdf
+      ATTACHMENT_MAX_BYTES: '10485760'
+      ATTACHMENT_MAX_PER_EXPENSE: '10'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - frontend
+      - backend
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'node -e "fetch(''http://127.0.0.1:4000/api/v1/health/ready'').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))"',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      target: runtime
+      args:
+        NEXT_PUBLIC_APP_URL: ${WEB_PUBLIC_URL:?Set WEB_PUBLIC_URL in .env.production}
+        NEXT_SERVER_ACTIONS_ALLOWED_ORIGINS: ${NEXT_SERVER_ACTIONS_ALLOWED_ORIGINS:?Set NEXT_SERVER_ACTIONS_ALLOWED_ORIGINS in .env.production}
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      HOSTNAME: 0.0.0.0
+      PORT: 3000
+      API_INTERNAL_URL: http://api:4000/api/v1
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - frontend
+    ports:
+      - '${WEB_BIND_ADDRESS:-127.0.0.1}:${WEB_PORT:-3000}:3000'
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'node -e "fetch(''http://127.0.0.1:3000/'').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))"',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
+
+networks:
+  frontend:
+    name: claims-os_frontend
+  backend:
+    name: claims-os_backend
+    internal: true
+
+volumes:
+  # Explicit names reuse Docker Compose's existing claims-os volumes. Compose
+  # never deletes them unless an operator deliberately passes `down --volumes`.
+  claims_minio_data:
+    name: claims-os_claims_minio_data
+  claims_postgres_data:
+    name: claims-os_claims_postgres_data
+  claims_redis_data:
+    name: claims-os_claims_redis_data

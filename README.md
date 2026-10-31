@@ -7,6 +7,10 @@ hosted on a Windows computer and available on its private LAN.
 The source requirements and implementation order begin at
 [`docs/00_README.md`](docs/00_README.md).
 
+For the complete Windows Docker Desktop deployment (including private-LAN
+access and persistent-volume safety), see
+[`docs/engineering/04_WINDOWS_LOCAL_DEPLOYMENT.md`](docs/engineering/04_WINDOWS_LOCAL_DEPLOYMENT.md).
+
 ## Prerequisites
 
 - Node.js 20.11 or later
