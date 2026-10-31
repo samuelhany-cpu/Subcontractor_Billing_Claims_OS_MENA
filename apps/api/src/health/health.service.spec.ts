@@ -22,6 +22,8 @@ function createConfig(timeoutMs = '100') {
       'image/jpeg,image/png,image/webp,application/pdf',
     ATTACHMENT_MAX_BYTES: '10485760',
     ATTACHMENT_MAX_PER_EXPENSE: '10',
+    AUTOMATION_INTERNAL_API_SECRET: 'test-automation-secret',
+    TELEGRAM_ALLOWED_CHAT_ID: 'test-chat',
     HEALTH_CHECK_TIMEOUT_MS: timeoutMs,
   });
 }

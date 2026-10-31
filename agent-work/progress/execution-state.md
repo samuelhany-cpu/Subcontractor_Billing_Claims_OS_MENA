@@ -2,6 +2,19 @@
 
 ## Current verification update
 
+- TEL-001 Automation API Phase 1 is VERIFIED — NOT DEPLOYED. It adds
+  owner-scoped, internally authenticated Telegram drafts and transactional,
+  idempotent confirmation for expenses and transfers.
+- Real disposable PostgreSQL verification passed: 10 integrity tests and 9
+  Automation tests, including 20-way expense/transfer races and all four
+  financial/audit rollback cases. Production volumes, credentials, and Villa
+  Obour records were not used.
+- TEL-002 (gateway/n8n) and RPT-001 remain unstarted.
+- TEL-001 Automation API Phase 1 is deployed and verified in production-local
+  Docker after explicit owner approval. The additive migration is applied, API
+  readiness and authorization checks pass, and post-deployment financial
+  reconciliation matches the verified backup baseline.
+
 - DASH-001 stabilization is complete and verified on current `master`.
 - `.github/workflows/quality.yml` now generates Prisma Client before workspace lint.
 - Verified gates: `pnpm format:check`, `pnpm lint`, `pnpm typecheck`, `pnpm test`, and `pnpm build` all pass.

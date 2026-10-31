@@ -141,49 +141,71 @@ export class ExpensesService {
     input: CreateExpenseRequest,
     correlationId?: string,
   ): Promise<ExpenseResponse> {
-    return this.expenses.transaction(async (transaction) => {
-      await this.projects.assertAcceptsWrites(input.projectId, transaction);
-      await this.validateClassification(
-        input.categoryId,
-        input.subcategoryId ?? null,
-        true,
-        true,
+    return this.expenses.transaction((transaction) =>
+      this.createTrusted(
+        input,
         transaction,
-      );
-      await this.validatePayee(input.payeeId ?? null, true, transaction);
-      const amount = this.amounts.create(input);
-      const created = await this.expenses.create(
-        {
-          projectId: input.projectId,
-          expenseDate: parseDateOnly(input.expenseDate),
-          description: input.description,
-          categoryId: input.categoryId,
-          subcategoryId: input.subcategoryId ?? null,
-          payeeId: input.payeeId ?? null,
-          invoiceNumber: input.invoiceNumber ?? null,
-          quantity: amount.quantity,
-          unit: input.unit ?? null,
-          unitPrice: amount.unitPrice,
-          amount: amount.amount,
-          paymentMethod: input.paymentMethod ?? null,
-          notes: input.notes ?? null,
-          source: RecordSource.WEB,
-        },
-        transaction,
-      );
-      await this.audit.append(
-        {
-          action: AuditAction.CREATE,
-          entityType: 'Expense',
-          entityId: created.id,
-          source: RecordSource.WEB,
-          after: expenseSnapshot('create', created),
-          ...(correlationId === undefined ? {} : { correlationId }),
-        },
-        transaction,
-      );
-      return mapExpense(await this.requireExpense(created.id, transaction));
-    });
+        RecordSource.WEB,
+        undefined,
+        correlationId,
+      ),
+    );
+  }
+
+  async createTrusted(
+    input: CreateExpenseRequest,
+    transaction: Prisma.TransactionClient,
+    source: RecordSource,
+    telegram?: { readonly chatId: string; readonly messageId: string | null },
+    correlationId?: string,
+  ): Promise<ExpenseResponse> {
+    await this.projects.assertAcceptsWrites(input.projectId, transaction);
+    await this.validateClassification(
+      input.categoryId,
+      input.subcategoryId ?? null,
+      true,
+      true,
+      transaction,
+    );
+    await this.validatePayee(input.payeeId ?? null, true, transaction);
+    const amount = this.amounts.create(input);
+    const created = await this.expenses.create(
+      {
+        projectId: input.projectId,
+        expenseDate: parseDateOnly(input.expenseDate),
+        description: input.description,
+        categoryId: input.categoryId,
+        subcategoryId: input.subcategoryId ?? null,
+        payeeId: input.payeeId ?? null,
+        invoiceNumber: input.invoiceNumber ?? null,
+        quantity: amount.quantity,
+        unit: input.unit ?? null,
+        unitPrice: amount.unitPrice,
+        amount: amount.amount,
+        paymentMethod: input.paymentMethod ?? null,
+        notes: input.notes ?? null,
+        source,
+        ...(telegram === undefined
+          ? {}
+          : {
+              telegramChatId: telegram.chatId,
+              telegramMsgId: telegram.messageId,
+            }),
+      },
+      transaction,
+    );
+    await this.audit.append(
+      {
+        action: AuditAction.CREATE,
+        entityType: 'Expense',
+        entityId: created.id,
+        source,
+        after: expenseSnapshot('create', created),
+        ...(correlationId === undefined ? {} : { correlationId }),
+      },
+      transaction,
+    );
+    return mapExpense(await this.requireExpense(created.id, transaction));
   }
 
   update(
@@ -348,8 +370,10 @@ export class ExpensesService {
     const quantity = desired.quantity as Prisma.Decimal | null;
     const unitPrice = desired.unitPrice as Prisma.Decimal | null;
     return (
-      current.expenseDate.getTime() ===
-        (desired.expenseDate as Date).getTime() &&
+      this.sameNullableDate(
+        current.expenseDate,
+        desired.expenseDate as Date | null,
+      ) &&
       current.description === desired.description &&
       current.categoryId === desired.categoryId &&
       current.subcategoryId === desired.subcategoryId &&
@@ -371,6 +395,12 @@ export class ExpensesService {
     return left === null || right === null
       ? left === right
       : left.equals(right);
+  }
+
+  private sameNullableDate(left: Date | null, right: Date | null): boolean {
+    return left === null || right === null
+      ? left === right
+      : left.getTime() === right.getTime();
   }
 
   private async requireExpense(

@@ -33,5 +33,6 @@ import { ExpensesService } from './expenses.service';
     ExpensesRepository,
     ExpensesService,
   ],
+  exports: [ExpensesService],
 })
 export class ExpensesModule {}

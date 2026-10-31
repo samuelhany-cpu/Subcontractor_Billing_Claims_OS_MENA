@@ -214,7 +214,9 @@ describe('Expenses API against isolated PostgreSQL and private MinIO', () => {
     const persisted = await prisma.expense.findUniqueOrThrow({
       where: { id: calculatedExpenseId },
     });
-    expect(persisted.expenseDate.toISOString().slice(0, 10)).toBe('2026-08-02');
+    expect(persisted.expenseDate?.toISOString().slice(0, 10)).toBe(
+      '2026-08-02',
+    );
     expect(persisted.amount.toFixed(2)).toBe('36450.00');
   });
 

@@ -22,18 +22,20 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:database": "tsx test/run-database-tests.ts",
+    "test:automation": "tsx test/run-database-tests.ts",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "test:infra": "jest --config ./test/jest-infrastructure.json --runInBand",
     "test:projects": "tsx test/run-project-tests.ts",
+    "import:villa-obour": "tsx scripts/import-villa-obour.ts",
     "test:categories": "tsx test/run-category-tests.ts",
     "test:payees": "tsx test/run-payee-tests.ts",
     "test:expenses": "tsx test/run-expense-tests.ts",
     "test:transfers": "tsx test/run-transfer-tests.ts"
   },
   "dependencies": {
-    "@claims-os/domain": "workspace:*",
     "@aws-sdk/client-s3": "^3.1097.0",
     "@aws-sdk/s3-request-presigner": "^3.1097.0",
+    "@claims-os/domain": "workspace:*",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.4",
     "@nestjs/core": "^11.0.1",
@@ -48,6 +50,7 @@
     "prisma": "^6.19.3",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
+    "xlsx": "0.18.5",
     "zod": "^4.4.3"
   },
   "devDependencies": {

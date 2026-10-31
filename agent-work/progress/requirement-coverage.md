@@ -2,6 +2,19 @@
 
 Current status: DASH-001 is complete and verified. RPT-001 remains not started.
 
+## TEL-001 verification update
+
+- TEL-001 Phase 1 is VERIFIED — NOT DEPLOYED: authenticated, server-owned
+  single-chat drafts; Zod validation; transactional confirmation; immutable
+  result linkage; Telegram source/audit attribution; and PostgreSQL exactly-once
+  verification are implemented.
+- TEL-002, the Telegram long-polling gateway, n8n orchestration, and live bot
+  activation remain out of scope and unstarted.
+- A restore-verified external production backup exists. After explicit owner
+  approval, the additive AutomationDraft result-link migration was applied and
+  post-deployment reconciliation, readiness, and authorization verification
+  passed.
+
 ## DASH-001 verification update
 
 - RPT-005 is implemented and verified: global/project dashboard cards, active-project summaries, category distribution, 12-week trend, top payees, and recent expenses/transfers.
@@ -30,7 +43,8 @@ EXP-001 delivers active Expense entry/edit/listing and private attachments. Soft
 | RPT-001–RPT-004, RPT-006–RPT-009 | Not started | Date-range reporting and one-sheet export remain pending | RPT-001 |
 | RPT-005 | Complete | Global/project dashboard cards, active-project summaries, category distribution, Cairo-aware 12-week trend, top payees, and recent activity; exact Decimal and soft-delete behavior verified | Backup status remains deferred to BKP-001 |
 | IMP-001–IMP-010 | Database foundation complete; workflow not started | Import metadata, statuses, hashes, row uniqueness, optional Expense relation | IMP-001 |
-| TEL-001–TEL-016 | Database foundation complete; API/workflow not started | AutomationDraft intent/status/payload/idempotency storage only | TEL-001/TEL-002; activation gated by OPEN-001/OPEN-002 |
+| TEL-001 | Deployed and verified | Authenticated, owner-scoped Automation API; transactional idempotent expense/transfer confirmation, audit/source attribution, real PostgreSQL concurrency/rollback tests, restore-verified backup, production migration, health, and reconciliation | Telegram transport/workflow remains TEL-002 |
+| TEL-002–TEL-016 | Not started | No gateway, n8n workflow, or live Telegram activation | TEL-002 and owner activation decisions |
 | BKP-001–BKP-004 | Not started | No backup behavior added | BKP-001; scheduling gated by OPEN-003–OPEN-005 |
 
 ## Preserved technical foundation

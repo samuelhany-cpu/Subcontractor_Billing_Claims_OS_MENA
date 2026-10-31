@@ -4,6 +4,7 @@
 export const DOMAIN_PACKAGE_NAME = '@claims-os/domain' as const;
 
 export * from './categories.js';
+export * from './automation.js';
 export * from './expenses.js';
 export * from './payees.js';
 export * from './projects.js';

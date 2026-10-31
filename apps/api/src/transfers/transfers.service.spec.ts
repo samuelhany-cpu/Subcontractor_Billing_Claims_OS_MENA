@@ -97,6 +97,7 @@ describe('TransfersService', () => {
 
     expect(projectState.assertAcceptsWrites).toHaveBeenCalledWith(
       'p0000000-0000-0000-0000-000000000001',
+      expect.anything(),
     );
     expect(audit.append).toHaveBeenCalledWith(
       expect.objectContaining({

@@ -8,7 +8,7 @@ export function formatMoney(value: string): string {
 
 export function formatDate(value: string | null): string {
   if (value === null) {
-    return 'غير محدد';
+    return 'بدون تاريخ';
   }
   const [year, month, day] = value.split('-');
   return `${day}/${month}/${year}`;

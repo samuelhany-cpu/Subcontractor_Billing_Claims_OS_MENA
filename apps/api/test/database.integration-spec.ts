@@ -248,7 +248,7 @@ describe('CORE-001 migrated database', () => {
     expect(
       serializeQuantity(precisionExpense?.unitPrice ?? new Prisma.Decimal(0)),
     ).toBe('12150.0000');
-    expect(storedExpenses[0]?.expenseDate.toISOString()).toBe(
+    expect(storedExpenses[0]?.expenseDate?.toISOString()).toBe(
       '2026-08-01T00:00:00.000Z',
     );
   });

@@ -19,3 +19,7 @@ Thumbs.db
 
 # Local object-storage and database volumes must remain outside source control.
 .local-data/
+.backups/
+
+# Original accountant archive: kept locally as an import source, never public.
+*Copy (2) (2026_09_06 11_01_20 UTC).xlsx

@@ -35,7 +35,7 @@ export function mapExpense(expense: ExpandedExpense): ExpenseResponse {
       name: expense.project.name,
       status: expense.project.status,
     },
-    expenseDate: serializeDateOnly(expense.expenseDate) ?? '',
+    expenseDate: serializeDateOnly(expense.expenseDate),
     description: expense.description,
     category:
       expense.category === null

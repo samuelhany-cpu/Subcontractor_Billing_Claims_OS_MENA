@@ -123,6 +123,8 @@ const rawEnvironmentSchema = z
     ATTACHMENT_ALLOWED_MIME_TYPES: mimeTypeList,
     ATTACHMENT_MAX_BYTES: positiveIntegerString,
     ATTACHMENT_MAX_PER_EXPENSE: positiveIntegerString,
+    AUTOMATION_INTERNAL_API_SECRET: nonEmptyString,
+    TELEGRAM_ALLOWED_CHAT_ID: nonEmptyString,
   })
   .superRefine((environment, context) => {
     let storageUrl: URL;
@@ -261,6 +263,10 @@ export interface ApiRuntimeConfig {
     readonly maxBytes: number;
     readonly maxPerExpense: number;
   };
+  readonly automation: {
+    readonly secret: string;
+    readonly allowedChatId: string;
+  };
 }
 
 export interface PublicWebRuntimeConfig {
@@ -342,6 +348,10 @@ export function parseApiEnvironment(
       maxBytes: value.ATTACHMENT_MAX_BYTES,
       maxPerExpense: value.ATTACHMENT_MAX_PER_EXPENSE,
     }),
+    automation: Object.freeze({
+      secret: value.AUTOMATION_INTERNAL_API_SECRET,
+      allowedChatId: value.TELEGRAM_ALLOWED_CHAT_ID,
+    }),
   });
 }
 
@@ -364,6 +374,7 @@ export function redactApiRuntimeConfig(
       accessKey: REDACTED_VALUE,
       secretKey: REDACTED_VALUE,
     },
+    automation: { secret: REDACTED_VALUE, allowedChatId: REDACTED_VALUE },
     attachments: config.attachments,
   };
 }

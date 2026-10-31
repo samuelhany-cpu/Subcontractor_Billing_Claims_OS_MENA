@@ -158,7 +158,9 @@ model Agreement {
 model Expense {
   id             String       @id @default(uuid()) @db.Uuid
   projectId      String       @db.Uuid
-  expenseDate    DateTime     @db.Date
+  // Legacy Excel history may have a genuinely unknown transaction date. New
+  // WEB writes remain date-required at the API/domain boundary.
+  expenseDate    DateTime?    @db.Date
   description    String       @db.Text
   categoryId     String?      @db.Uuid
   subcategoryId  String?      @db.Uuid
@@ -250,6 +252,8 @@ model AutomationDraft {
   idempotencyKey String                @unique @db.VarChar(160)
   expiresAt      DateTime
   confirmedAt    DateTime?
+  resultEntityType String?             @db.VarChar(32)
+  resultEntityId   String?             @db.Uuid
   createdAt      DateTime              @default(now())
   updatedAt      DateTime              @updatedAt
 

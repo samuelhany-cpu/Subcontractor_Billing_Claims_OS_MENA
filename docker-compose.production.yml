@@ -64,7 +64,7 @@ services:
       test:
         [
           'CMD-SHELL',
-            "bash -ec 'exec 3<>/dev/tcp/127.0.0.1/9000; printf \"GET /minio/health/live HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n\" >&3; read -r status <&3; [[ \"$$status\" == *\" 200 \"* ]]'",
+          "bash -ec 'exec 3<>/dev/tcp/127.0.0.1/9000; printf \"GET /minio/health/live HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n\" >&3; read -r status <&3; [[ \"$$status\" == *\" 200 \"* ]]'",
         ]
       interval: 5s
       timeout: 5s
@@ -123,6 +123,8 @@ services:
       LOG_FORMAT: json
       REQUEST_LOGGING: 'true'
       HEALTH_CHECK_TIMEOUT_MS: ${HEALTH_CHECK_TIMEOUT_MS:-1000}
+      AUTOMATION_INTERNAL_API_SECRET: ${AUTOMATION_INTERNAL_API_SECRET:?Set AUTOMATION_INTERNAL_API_SECRET in .env.production}
+      TELEGRAM_ALLOWED_CHAT_ID: ${TELEGRAM_ALLOWED_CHAT_ID:?Set TELEGRAM_ALLOWED_CHAT_ID in .env.production}
       DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env.production}
       REDIS_URL: ${REDIS_URL:?Set REDIS_URL in .env.production}
       OBJECT_STORAGE_ENDPOINT: http://minio:9000

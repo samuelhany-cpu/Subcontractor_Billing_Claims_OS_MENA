@@ -26,6 +26,7 @@ FROM build AS deploy
 RUN pnpm --filter @claims-os/api deploy --legacy --prod /opt/claims-os-api \
     && cd /opt/claims-os-api \
     && DATABASE_URL=postgresql://localhost:5432/prisma_generate node_modules/.bin/prisma generate --schema prisma/schema.prisma
+COPY --from=build /app/apps/api/dist /opt/claims-os-api/dist
 
 # The migration job has the same production dependency closure as the API and
 # deliberately runs only `prisma migrate deploy`; it never resets persistent
@@ -44,4 +45,4 @@ RUN apt-get update \
 COPY --from=deploy --chown=node:node /opt/claims-os-api ./
 USER node
 EXPOSE 4000
-CMD ["node", "dist/main.js"]
+CMD ["node", "dist/src/main.js"]

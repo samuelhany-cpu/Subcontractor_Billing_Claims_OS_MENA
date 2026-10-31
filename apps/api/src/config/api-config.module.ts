@@ -19,6 +19,7 @@ function readValidatedConfig(config: ConfigService): ApiRuntimeConfig {
       config.getOrThrow<ApiRuntimeConfig['objectStorage']>('objectStorage'),
     attachments:
       config.getOrThrow<ApiRuntimeConfig['attachments']>('attachments'),
+    automation: config.getOrThrow<ApiRuntimeConfig['automation']>('automation'),
   };
 }
 

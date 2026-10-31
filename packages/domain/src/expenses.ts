@@ -200,7 +200,7 @@ export interface AttachmentMetadata {
 export interface ExpenseResponse {
   readonly id: string;
   readonly project: ExpenseProjectSummary;
-  readonly expenseDate: string;
+  readonly expenseDate: string | null;
   readonly description: string;
   readonly category: ExpenseClassificationSummary | null;
   readonly subcategory: ExpenseClassificationSummary | null;

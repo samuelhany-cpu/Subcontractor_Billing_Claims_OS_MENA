@@ -255,7 +255,7 @@ function cairoCalendarDate(now: Date): Date {
 
 function buildWeeklyTrend(
   rows: readonly {
-    readonly expenseDate: Date;
+    readonly expenseDate: Date | null;
     readonly _sum: { readonly amount: Prisma.Decimal | null };
   }[],
 ): readonly DashboardTrendPoint[] {
@@ -267,6 +267,7 @@ function buildWeeklyTrend(
   });
   const byWeek = new Map(buckets);
   for (const row of rows) {
+    if (row.expenseDate === null) continue;
     const key = serializeDateOnly(startOfDateOnlyWeek(row.expenseDate)) ?? '';
     byWeek.set(
       key,

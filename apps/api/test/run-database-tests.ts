@@ -7,6 +7,14 @@ const databaseName = `expense_tracker_core_001_${process.pid}_${Date.now()}`;
 const adminUrl = new URL(
   process.env.CORE_DATABASE_ADMIN_URL ?? DEFAULT_ADMIN_URL,
 );
+if (
+  !['127.0.0.1', 'localhost'].includes(adminUrl.hostname) ||
+  /prod|claims-os-prod/i.test(adminUrl.toString())
+) {
+  throw new Error(
+    'Database tests require an explicitly local disposable PostgreSQL administrator URL',
+  );
+}
 adminUrl.pathname = '/postgres';
 const databaseUrl = new URL(adminUrl);
 databaseUrl.pathname = `/${databaseName}`;
@@ -103,6 +111,15 @@ async function main(): Promise<void> {
       '--config',
       'test/jest-database.json',
       '--runInBand',
+      'test/database.integration-spec.ts',
+    ]);
+    await runPnpm([
+      'exec',
+      'jest',
+      '--config',
+      'test/jest-database.json',
+      '--runInBand',
+      'test/automation.database.integration-spec.ts',
     ]);
   } finally {
     await dropDatabase();

@@ -14,7 +14,7 @@ describe('Arabic project formatting', () => {
 
   it('displays date-only values as DD/MM/YYYY without parsing a timezone', () => {
     expect(formatDate('2026-08-01')).toBe('01/08/2026');
-    expect(formatDate(null)).toBe('غير محدد');
+    expect(formatDate(null)).toBe('بدون تاريخ');
   });
 
   it('derives exact Agreement remaining and overpayment in integer cents', () => {

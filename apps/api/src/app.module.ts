@@ -8,6 +8,7 @@ import { ObservabilityModule } from './observability/observability.module';
 import { PayeesModule } from './payees/payees.module';
 import { ProjectsModule } from './projects/projects.module';
 import { TransfersModule } from './transfers/transfers.module';
+import { AutomationModule } from './automation/automation.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { TransfersModule } from './transfers/transfers.module';
     PayeesModule,
     ProjectsModule,
     TransfersModule,
+    AutomationModule,
   ],
 })
 export class AppModule {}

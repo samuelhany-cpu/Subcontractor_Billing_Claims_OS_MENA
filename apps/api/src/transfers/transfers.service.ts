@@ -4,7 +4,12 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { AuditAction, PrismaClient, RecordSource } from '@prisma/client';
+import {
+  AuditAction,
+  Prisma,
+  PrismaClient,
+  RecordSource,
+} from '@prisma/client';
 import { DATABASE_CLIENT } from '../infrastructure/database/database.service';
 import { ProjectStateService } from '../projects/project-state.service';
 import { AuditService } from '../audit/audit.service';
@@ -51,40 +56,45 @@ export class TransfersService {
   ) {}
 
   async create(dto: CreateTransferRequest): Promise<TransferResponse> {
-    await this.projectState.assertAcceptsWrites(dto.projectId);
+    const correlationId = this.correlation.getCorrelationId();
+    return this.db.$transaction((tx) =>
+      this.createTrusted(dto, tx, RecordSource.WEB, correlationId),
+    );
+  }
 
+  async createTrusted(
+    dto: CreateTransferRequest,
+    tx: Prisma.TransactionClient,
+    source: RecordSource,
+    correlationId?: string,
+  ): Promise<TransferResponse> {
+    await this.projectState.assertAcceptsWrites(dto.projectId, tx);
     const amountDecimal = parseMoney(dto.amount);
     const dateObj = new Date(`${dto.transferDate}T00:00:00.000Z`);
-    const correlationId = this.correlation.getCorrelationId();
+    const created = await this.repository.create(
+      {
+        project: { connect: { id: dto.projectId } },
+        transferDate: dateObj,
+        amount: amountDecimal,
+        source,
+      },
+      tx,
+    );
 
-    const result = await this.db.$transaction(async (tx) => {
-      const created = await this.repository.create(
-        {
-          project: { connect: { id: dto.projectId } },
-          transferDate: dateObj,
-          amount: amountDecimal,
-          source: RecordSource.WEB,
-        },
-        tx,
-      );
+    const snapshot = mapTransferResponse(created) as unknown as AuditSnapshot;
+    await this.audit.append(
+      {
+        action: AuditAction.CREATE,
+        entityType: 'Transfer',
+        entityId: created.id,
+        source,
+        after: snapshot,
+        ...(correlationId === undefined ? {} : { correlationId }),
+      },
+      tx,
+    );
 
-      const snapshot = mapTransferResponse(created) as unknown as AuditSnapshot;
-      await this.audit.append(
-        {
-          action: AuditAction.CREATE,
-          entityType: 'Transfer',
-          entityId: created.id,
-          source: RecordSource.WEB,
-          after: snapshot,
-          ...(correlationId === undefined ? {} : { correlationId }),
-        },
-        tx,
-      );
-
-      return created;
-    });
-
-    return mapTransferResponse(result);
+    return mapTransferResponse(created);
   }
 
   async get(id: string): Promise<TransferResponse> {
