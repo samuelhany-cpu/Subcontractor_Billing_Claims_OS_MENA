@@ -36,6 +36,9 @@ jobs:
       - name: Generate Prisma Client
         run: pnpm --filter @claims-os/api generate
 
+      - name: Build shared domain
+        run: pnpm --filter @claims-os/domain build
+
       - name: Lint
         run: pnpm lint
 

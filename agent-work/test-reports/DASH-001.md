@@ -26,7 +26,7 @@ Stabilization of global and project dashboards on current `master`, including Pr
 
 ## CI stabilization
 
-The Quality workflow now runs `pnpm --filter @claims-os/api generate` after dependency installation and before lint. ESLint and TypeScript rules were not weakened. The two unrelated pre-existing transfer mock type errors were corrected so the strict typecheck also passes.
+The Quality workflow now runs Prisma Client generation and `pnpm --filter @claims-os/domain build` after dependency installation and before lint. The clean artifact-free reproduction produced 513 API lint errors; the domain build removes the unresolved `@claims-os/domain` declaration cascade. ESLint and TypeScript rules were not weakened. The transfer mock typing issue was corrected so strict typecheck also passes.
 
 ## Scope boundary
 

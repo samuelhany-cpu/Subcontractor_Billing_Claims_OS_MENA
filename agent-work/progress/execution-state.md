@@ -9,15 +9,15 @@
 - The next eligible task remains RPT-001; no RPT-001 implementation was started.
 - This verification section supersedes the historical task-status lines retained below for audit continuity.
 
-- Current phase: Expense recycle bin, restore, and audit lifecycle complete
-- Current task: EXP-002 — Expense recycle bin, restore, and related audit visibility
-- Requirement IDs: EXP-008, EXP-009, EXP-016; Expense portions of AUD-001 through AUD-003
-- Status: Complete; focused EXP-002 commit accompanies these records
+- Current phase: DASH-001 dashboard stabilization complete
+- Current task: RPT-001 — Date-range reports and one-sheet Excel export (not started)
+- Requirement IDs: RPT-005; dashboard portions of DEC-039
+- Status: Complete; CI generation ordering, Cairo boundaries, and aggregation tests verified
 - Completed foundation and slices: FOUND-001A 648f7b5; FOUND-001B 5669b7f; FOUND-001C 1110186; PIVOT-001 9c462f2; REPO-001 108acb1; CORE-001 789ee73; PRJ-001 ff9feb7; CAT-001 e628480; PAY-001 8945cca; EXP-001 20756c8; TRF-001 8fc5ccb
 - Database migration: unchanged; 20260801000000_expense_tracker_foundation reused
 - Open decisions: OPEN-001 through OPEN-005 remain unresolved and unchanged
 - Current quality gates: frozen install, format, lint, strict typecheck, workspace tests, isolated Expenses PostgreSQL/API flows, build, Compose config/readiness, both Prisma validations, Prisma generation, OpenAPI validation, policy scans, and diff checks pass
-- Next eligible task: DASH-001 — Global and project dashboards (not started)
+- Next eligible task: RPT-001 — Date-range reports and one-sheet Excel export
 
 ## Dependency-ordered implementation queue
 
@@ -29,7 +29,7 @@
 6. TRF-001 — Complete.
 7. EXP-002 — Complete.
 
-8. DASH-001 — Global and project dashboards.
+8. DASH-001 — Complete.
 
 9. RPT-001 — Date-range reports and one-sheet Excel export.
 10. IMP-001 — Legacy and organized Excel preview/commit/import reporting.
