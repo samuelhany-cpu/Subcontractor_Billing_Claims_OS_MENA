@@ -1,5 +1,14 @@
 # Execution State
 
+## Current verification update
+
+- DASH-001 stabilization is complete and verified on current `master`.
+- `.github/workflows/quality.yml` now generates Prisma Client before workspace lint.
+- Verified gates: `pnpm format:check`, `pnpm lint`, `pnpm typecheck`, `pnpm test`, and `pnpm build` all pass.
+- Dashboard-specific verification covers exact Decimal aggregation, soft-delete exclusion, archived-project analytics, empty datasets, and Africa/Cairo Monday week boundaries.
+- The next eligible task remains RPT-001; no RPT-001 implementation was started.
+- This verification section supersedes the historical task-status lines retained below for audit continuity.
+
 - Current phase: Expense recycle bin, restore, and audit lifecycle complete
 - Current task: EXP-002 — Expense recycle bin, restore, and related audit visibility
 - Requirement IDs: EXP-008, EXP-009, EXP-016; Expense portions of AUD-001 through AUD-003

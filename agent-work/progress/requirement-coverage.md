@@ -1,5 +1,12 @@
 # Requirement Coverage
 
+## DASH-001 verification update
+
+- RPT-005 is implemented and verified: global/project dashboard cards, active-project summaries, category distribution, 12-week trend, top payees, and recent expenses/transfers.
+- Dashboard analytics use active records only, preserve exact Decimal money strings, retain archived-project read-only analytics, and calculate Monday week buckets using Africa/Cairo calendar dates.
+- Backup status remains deferred to BKP-001; no backup behavior was invented.
+- This verification section supersedes the historical RPT status row retained below for audit continuity.
+
 EXP-001 delivers active Expense entry/edit/listing and private attachments. Soft-delete, restore, recycle-bin, and audit-history workflows remain explicitly deferred to EXP-002.
 
 | Requirement IDs | Status   | Current evidence                                                                                                                                                                                                           | Remaining gap                                                         |

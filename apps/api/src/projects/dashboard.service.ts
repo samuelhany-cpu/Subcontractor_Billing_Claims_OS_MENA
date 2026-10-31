@@ -104,7 +104,7 @@ export class DashboardService {
     readonly recentTransfers: readonly DashboardTransfer[];
   }> {
     const where = { projectId: { in: [...projectIds] }, deletedAt: null };
-    const trendStart = startOfWeek(new Date(), weekCount - 1);
+    const trendStart = startOfCairoWeek(weekCount - 1);
     const [
       categoryRows,
       payeeRows,
@@ -220,13 +220,37 @@ function compareAmounts<T extends { readonly amount: string }>(
   return new Prisma.Decimal(right.amount).comparedTo(left.amount);
 }
 
-function startOfWeek(date: Date, weeksBack: number): Date {
+export function startOfCairoWeek(weeksBack = 0, now = new Date()): Date {
+  const result = cairoCalendarDate(now);
+  const offset = (result.getUTCDay() + 6) % 7;
+  result.setUTCDate(result.getUTCDate() - offset - weeksBack * 7);
+  return result;
+}
+
+function startOfDateOnlyWeek(date: Date): Date {
   const result = new Date(
     Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()),
   );
   const offset = (result.getUTCDay() + 6) % 7;
-  result.setUTCDate(result.getUTCDate() - offset - weeksBack * 7);
+  result.setUTCDate(result.getUTCDate() - offset);
   return result;
+}
+
+function cairoCalendarDate(now: Date): Date {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Africa/Cairo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(now);
+  const values = new Map(parts.map((part) => [part.type, part.value]));
+  return new Date(
+    Date.UTC(
+      Number(values.get('year')),
+      Number(values.get('month')) - 1,
+      Number(values.get('day')),
+    ),
+  );
 }
 
 function buildWeeklyTrend(
@@ -235,7 +259,7 @@ function buildWeeklyTrend(
     readonly _sum: { readonly amount: Prisma.Decimal | null };
   }[],
 ): readonly DashboardTrendPoint[] {
-  const firstWeek = startOfWeek(new Date(), weekCount - 1);
+  const firstWeek = startOfCairoWeek(weekCount - 1);
   const buckets = Array.from({ length: weekCount }, (_, index) => {
     const week = new Date(firstWeek);
     week.setUTCDate(week.getUTCDate() + index * 7);
@@ -243,7 +267,7 @@ function buildWeeklyTrend(
   });
   const byWeek = new Map(buckets);
   for (const row of rows) {
-    const key = serializeDateOnly(startOfWeek(row.expenseDate, 0)) ?? '';
+    const key = serializeDateOnly(startOfDateOnlyWeek(row.expenseDate)) ?? '';
     byWeek.set(
       key,
       (byWeek.get(key) ?? new Prisma.Decimal(0)).plus(row._sum.amount ?? 0),

@@ -48,11 +48,13 @@ describe('TransfersService', () => {
     const mockCorrelation = {
       getCorrelationId: jest.fn().mockReturnValue('test-correlation-id'),
     };
-    const mockDb = {
-      $transaction: jest.fn((cb: (tx: unknown) => Promise<unknown>) =>
-        cb(mockDb),
-      ),
+    type MockDatabase = {
+      $transaction: (cb: (tx: unknown) => Promise<unknown>) => Promise<unknown>;
     };
+    const mockDb = {} as MockDatabase;
+    mockDb.$transaction = jest.fn((cb: (tx: unknown) => Promise<unknown>) =>
+      cb(mockDb),
+    );
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [

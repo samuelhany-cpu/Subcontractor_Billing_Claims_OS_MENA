@@ -33,6 +33,9 @@ jobs:
       - name: Check formatting
         run: pnpm format:check
 
+      - name: Generate Prisma Client
+        run: pnpm --filter @claims-os/api generate
+
       - name: Lint
         run: pnpm lint
 

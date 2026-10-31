@@ -44,9 +44,8 @@ describe('ProjectsService audit transactions', () => {
     const totals = {
       forProject: jest.fn().mockResolvedValue(zeroTotals),
     } as unknown as ProjectTotalsService;
-    const dashboard = {
-      forProject: jest.fn().mockResolvedValue(analytics),
-    } as unknown as DashboardService;
+    const forProject = jest.fn().mockResolvedValue(analytics);
+    const dashboard = { forProject } as unknown as DashboardService;
 
     await expect(
       new ProjectsService(
@@ -56,7 +55,7 @@ describe('ProjectsService audit transactions', () => {
         dashboard,
       ).dashboard(record.id),
     ).resolves.toEqual(analytics);
-    expect(dashboard.forProject).toHaveBeenCalledWith(record, zeroTotals);
+    expect(forProject).toHaveBeenCalledWith(record, zeroTotals);
   });
 
   it('passes the same transaction to project creation and audit append', async () => {
