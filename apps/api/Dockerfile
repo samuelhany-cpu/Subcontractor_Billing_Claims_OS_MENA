@@ -23,7 +23,9 @@ COPY . .
 RUN pnpm --filter @claims-os/domain build && pnpm --filter @claims-os/api build
 
 FROM build AS deploy
-RUN pnpm --filter @claims-os/api deploy --legacy --prod /opt/claims-os-api
+RUN pnpm --filter @claims-os/api deploy --legacy --prod /opt/claims-os-api \
+    && cd /opt/claims-os-api \
+    && DATABASE_URL=postgresql://localhost:5432/prisma_generate node_modules/.bin/prisma generate --schema prisma/schema.prisma
 
 # The migration job has the same production dependency closure as the API and
 # deliberately runs only `prisma migrate deploy`; it never resets persistent
@@ -36,6 +38,9 @@ CMD ["node_modules/.bin/prisma", "migrate", "deploy", "--schema", "prisma/schema
 FROM node:20-bookworm-slim AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
+RUN apt-get update \
+    && apt-get install --no-install-recommends -y openssl \
+    && rm -rf /var/lib/apt/lists/*
 COPY --from=deploy --chown=node:node /opt/claims-os-api ./
 USER node
 EXPOSE 4000

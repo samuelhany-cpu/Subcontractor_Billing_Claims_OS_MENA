@@ -1,7 +1,7 @@
 # Production-local topology. This intentionally does not extend docker-compose.yml:
 # development keeps its loopback-published infrastructure, while this file publishes
 # only the web application and reuses the same claims-os named volumes.
-name: claims-os
+name: claims-os-prod
 
 services:
   postgres:
@@ -50,9 +50,7 @@ services:
       start_period: 5s
 
   minio:
-    # Docker Hub withdrew these official images. Keep the registry override so a
-    # trusted local mirror can be used without editing the deployment topology.
-    image: ${MINIO_IMAGE:-quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z-cpuv1}
+    image: cgr.dev/chainguard/minio@sha256:9cc9cf7bde067425120f37019f5c7f5d565737b2ee6ef66200c4c34e4b9b0fac
     restart: unless-stopped
     command: server /data --console-address ':9001'
     environment:
@@ -66,7 +64,7 @@ services:
       test:
         [
           'CMD-SHELL',
-          'curl --fail --silent http://127.0.0.1:9000/minio/health/live',
+            "bash -ec 'exec 3<>/dev/tcp/127.0.0.1/9000; printf \"GET /minio/health/live HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n\" >&3; read -r status <&3; [[ \"$$status\" == *\" 200 \"* ]]'",
         ]
       interval: 5s
       timeout: 5s
@@ -74,7 +72,7 @@ services:
       start_period: 15s
 
   minio-init:
-    image: ${MINIO_MC_IMAGE:-quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z-cpuv1}
+    image: cgr.dev/chainguard/minio-client@sha256:bd2d82883460ec07b5a29b44ba026fb864a1ebaed4b8bd8dc1575f3ab269af96
     restart: 'no'
     depends_on:
       minio:
@@ -194,17 +192,17 @@ services:
 
 networks:
   frontend:
-    name: claims-os_frontend
+    name: claims-os-prod_frontend
   backend:
-    name: claims-os_backend
+    name: claims-os-prod_backend
     internal: true
 
 volumes:
-  # Explicit names reuse Docker Compose's existing claims-os volumes. Compose
+  # Deliberately distinct from development's `claims-os_*` volumes. Compose
   # never deletes them unless an operator deliberately passes `down --volumes`.
   claims_minio_data:
-    name: claims-os_claims_minio_data
+    name: claims-os-prod_claims_minio_data
   claims_postgres_data:
-    name: claims-os_claims_postgres_data
+    name: claims-os-prod_claims_postgres_data
   claims_redis_data:
-    name: claims-os_claims_redis_data
+    name: claims-os-prod_claims_redis_data
