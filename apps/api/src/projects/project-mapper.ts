@@ -1,8 +1,4 @@
-import {
-  ProjectDashboardResponse,
-  ProjectResponse,
-  ProjectTotals,
-} from '@claims-os/domain';
+import { ProjectResponse, ProjectTotals } from '@claims-os/domain';
 import { Project } from '@prisma/client';
 import { serializeMoney } from '../shared/decimal/decimal';
 
@@ -41,17 +37,5 @@ export function mapProject(
     createdAt: project.createdAt.toISOString(),
     updatedAt: project.updatedAt.toISOString(),
     totals,
-  };
-}
-
-export function mapDashboard(
-  project: Project,
-  totals: ProjectTotals,
-): ProjectDashboardResponse {
-  return {
-    projectId: project.id,
-    status: project.status,
-    openingBalance: serializeMoney(project.openingBalance),
-    ...totals,
   };
 }

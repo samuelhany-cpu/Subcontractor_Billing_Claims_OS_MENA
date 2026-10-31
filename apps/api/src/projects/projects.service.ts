@@ -22,7 +22,6 @@ import {
   projectNotFound,
 } from './project-errors';
 import {
-  mapDashboard,
   mapProject,
   parseDateOnly,
   projectSnapshot,
@@ -30,6 +29,7 @@ import {
 } from './project-mapper';
 import { ProjectTotalsService } from './project-totals.service';
 import { ProjectsRepository } from './projects.repository';
+import { DashboardService } from './dashboard.service';
 
 @Injectable()
 export class ProjectsService {
@@ -37,6 +37,7 @@ export class ProjectsService {
     private readonly projects: ProjectsRepository,
     private readonly totals: ProjectTotalsService,
     private readonly audit: AuditService,
+    private readonly dashboardService: DashboardService,
   ) {}
 
   async create(
@@ -185,7 +186,10 @@ export class ProjectsService {
 
   async dashboard(projectId: string): Promise<ProjectDashboardResponse> {
     const project = await this.requireProject(projectId);
-    return mapDashboard(project, await this.totals.forProject(project));
+    return this.dashboardService.forProject(
+      project,
+      await this.totals.forProject(project),
+    );
   }
 
   private async transition(

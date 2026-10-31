@@ -5,13 +5,16 @@ import { ProjectTotalsService } from './project-totals.service';
 import { ProjectsController } from './projects.controller';
 import { ProjectsRepository } from './projects.repository';
 import { ProjectsService } from './projects.service';
+import { DashboardService } from './dashboard.service';
+import { DashboardsController } from './dashboards.controller';
 
 @Module({
   imports: [InfrastructureModule],
-  controllers: [ProjectsController],
+  controllers: [ProjectsController, DashboardsController],
   providers: [
     ProjectsRepository,
     ProjectTotalsService,
+    DashboardService,
     ProjectStateService,
     ProjectsService,
   ],

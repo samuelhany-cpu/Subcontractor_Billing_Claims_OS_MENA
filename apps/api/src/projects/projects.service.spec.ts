@@ -1,8 +1,11 @@
 import { Prisma, ProjectStatus } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { ProjectTotalsService } from './project-totals.service';
+import { DashboardService } from './dashboard.service';
 import { ProjectsRepository } from './projects.repository';
 import { ProjectsService } from './projects.service';
+
+const dashboard = {} as DashboardService;
 
 const record = {
   id: '11111111-1111-4111-8111-111111111111',
@@ -23,6 +26,39 @@ const zeroTotals = {
 };
 
 describe('ProjectsService audit transactions', () => {
+  it('delegates project dashboard analytics to the dashboard service', async () => {
+    const analytics = {
+      projectId: record.id,
+      status: ProjectStatus.ACTIVE,
+      openingBalance: '0.00',
+      ...zeroTotals,
+      categoryTotals: [],
+      weeklyExpenses: [],
+      topPayees: [],
+      recentExpenses: [],
+      recentTransfers: [],
+    };
+    const repository = {
+      findById: jest.fn().mockResolvedValue(record),
+    } as unknown as ProjectsRepository;
+    const totals = {
+      forProject: jest.fn().mockResolvedValue(zeroTotals),
+    } as unknown as ProjectTotalsService;
+    const dashboard = {
+      forProject: jest.fn().mockResolvedValue(analytics),
+    } as unknown as DashboardService;
+
+    await expect(
+      new ProjectsService(
+        repository,
+        totals,
+        {} as AuditService,
+        dashboard,
+      ).dashboard(record.id),
+    ).resolves.toEqual(analytics);
+    expect(dashboard.forProject).toHaveBeenCalledWith(record, zeroTotals);
+  });
+
   it('passes the same transaction to project creation and audit append', async () => {
     const transaction = { marker: 'transaction' };
     const create = jest.fn().mockResolvedValue(record);
@@ -38,7 +74,7 @@ describe('ProjectsService audit transactions', () => {
     } as unknown as ProjectTotalsService;
     const audit = { append } as unknown as AuditService;
 
-    await new ProjectsService(repository, totals, audit).create(
+    await new ProjectsService(repository, totals, audit, dashboard).create(
       { name: 'مشروع' },
       'corr-1',
     );
@@ -65,7 +101,9 @@ describe('ProjectsService audit transactions', () => {
     } as unknown as AuditService;
 
     await expect(
-      new ProjectsService(repository, totals, audit).create({ name: 'مشروع' }),
+      new ProjectsService(repository, totals, audit, dashboard).create({
+        name: 'مشروع',
+      }),
     ).rejects.toThrow('audit failed');
     expect(forProject).not.toHaveBeenCalled();
   });
@@ -86,10 +124,13 @@ describe('ProjectsService audit transactions', () => {
     } as unknown as ProjectTotalsService;
     const audit = { append } as unknown as AuditService;
 
-    await new ProjectsService(repository, totals, audit).update(record.id, {
-      name: record.name,
-      openingBalance: '0.00',
-    });
+    await new ProjectsService(repository, totals, audit, dashboard).update(
+      record.id,
+      {
+        name: record.name,
+        openingBalance: '0.00',
+      },
+    );
 
     expect(update).not.toHaveBeenCalled();
     expect(append).not.toHaveBeenCalled();

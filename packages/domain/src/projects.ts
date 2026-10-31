@@ -85,4 +85,53 @@ export interface ProjectDashboardResponse extends ProjectTotals {
   readonly projectId: string;
   readonly status: ProjectStatus;
   readonly openingBalance: string;
+  readonly categoryTotals: readonly DashboardCategoryTotal[];
+  readonly weeklyExpenses: readonly DashboardTrendPoint[];
+  readonly topPayees: readonly DashboardPayeeTotal[];
+  readonly recentExpenses: readonly DashboardExpense[];
+  readonly recentTransfers: readonly DashboardTransfer[];
+}
+
+export interface DashboardCategoryTotal {
+  readonly categoryId: string | null;
+  readonly categoryName: string;
+  readonly amount: string;
+  readonly expenseCount: number;
+}
+
+export interface DashboardTrendPoint {
+  readonly periodStart: string;
+  readonly amount: string;
+}
+
+export interface DashboardPayeeTotal {
+  readonly payeeId: string;
+  readonly payeeName: string;
+  readonly amount: string;
+}
+
+export interface DashboardExpense {
+  readonly id: string;
+  readonly expenseDate: string;
+  readonly description: string;
+  readonly amount: string;
+  readonly categoryName: string;
+  readonly payeeName: string | null;
+}
+
+export interface DashboardTransfer {
+  readonly id: string;
+  readonly transferDate: string;
+  readonly amount: string;
+}
+
+export interface GlobalDashboardResponse extends ProjectTotals {
+  readonly activeProjectCount: number;
+  readonly archivedProjectCount: number;
+  readonly projects: readonly ProjectResponse[];
+  readonly categoryTotals: readonly DashboardCategoryTotal[];
+  readonly weeklyExpenses: readonly DashboardTrendPoint[];
+  readonly topPayees: readonly DashboardPayeeTotal[];
+  readonly recentExpenses: readonly DashboardExpense[];
+  readonly recentTransfers: readonly DashboardTransfer[];
 }
