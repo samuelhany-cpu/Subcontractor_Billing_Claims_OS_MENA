@@ -659,6 +659,187 @@ textarea:focus {
   text-align: right;
   font-size: 1.35rem;
 }
+.dashboard-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+.global-project-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.global-project-counts span {
+  padding: 9px 13px;
+  border-radius: 999px;
+  background: var(--surface-soft);
+  color: var(--muted);
+}
+.global-project-counts strong {
+  color: var(--primary-dark);
+}
+.dashboard-analytics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+.dashboard-panel {
+  padding: clamp(18px, 3vw, 26px);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+.dashboard-panel.active-projects {
+  grid-column: 1 / -1;
+}
+.dashboard-panel-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+.dashboard-panel-heading h2 {
+  margin: 2px 0 0;
+  font-size: 1.15rem;
+}
+.dashboard-panel-heading > a {
+  color: var(--primary);
+  font-weight: 800;
+  white-space: nowrap;
+}
+.dashboard-empty {
+  margin: 0;
+  color: var(--muted);
+}
+.dashboard-projects-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+}
+.dashboard-project-card {
+  display: grid;
+  gap: 5px;
+  padding: 15px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-soft);
+  color: var(--ink);
+  text-decoration: none;
+}
+.dashboard-project-card:hover {
+  border-color: #96b4a8;
+}
+.dashboard-project-card small,
+.recent-list small,
+.distribution-list small {
+  color: var(--muted);
+}
+.dashboard-project-card strong {
+  text-align: right;
+}
+.trend-chart {
+  display: flex;
+  min-height: 210px;
+  align-items: end;
+  gap: 6px;
+  overflow-x: auto;
+  padding-top: 18px;
+}
+.trend-column {
+  display: grid;
+  min-width: 52px;
+  flex: 1;
+  gap: 6px;
+  align-items: end;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.67rem;
+}
+.trend-value {
+  min-height: 30px;
+  color: var(--ink);
+  font-size: 0.65rem;
+}
+.trend-track {
+  display: flex;
+  height: 118px;
+  width: 100%;
+  align-items: end;
+  border-radius: 8px 8px 2px 2px;
+  background: #edf2ef;
+}
+.trend-bar {
+  width: 100%;
+  border-radius: 8px 8px 2px 2px;
+  background: linear-gradient(180deg, #79a891, var(--primary));
+}
+.distribution-list,
+.ranked-list,
+.recent-list {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.distribution-list li {
+  display: grid;
+  gap: 5px;
+}
+.distribution-label,
+.recent-list li,
+.ranked-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.distribution-track {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #edf2ef;
+}
+.distribution-bar {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--primary);
+}
+.ranked-list li,
+.recent-list li {
+  padding: 11px 0;
+  border-bottom: 1px solid var(--line);
+}
+.ranked-list li:last-child,
+.recent-list li:last-child {
+  border-bottom: 0;
+}
+.ranked-list li > span:nth-child(2),
+.recent-list a {
+  flex: 1;
+}
+.rank {
+  display: inline-grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--surface-soft);
+  color: var(--primary);
+  font-weight: 800;
+}
+.recent-list a {
+  display: grid;
+  gap: 3px;
+  color: var(--ink);
+  text-decoration: none;
+}
+.recent-list strong {
+  white-space: nowrap;
+}
 .edit-panel {
   padding-top: 20px;
 }
@@ -699,7 +880,8 @@ textarea:focus {
   }
   .form-row,
   .project-grid,
-  .summary-grid {
+  .summary-grid,
+  .dashboard-analytics {
     grid-template-columns: 1fr;
   }
   .filter-tabs {
@@ -711,6 +893,11 @@ textarea:focus {
   }
   .project-metrics {
     grid-template-columns: 1fr;
+  }
+  .dashboard-hero,
+  .dashboard-panel-heading {
+    align-items: stretch;
+    flex-direction: column;
   }
   .payee-grid,
   .agreement-live-summary,

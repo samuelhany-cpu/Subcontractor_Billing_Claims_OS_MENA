@@ -1,7 +1,9 @@
 import 'server-only';
 import {
   CreateProjectRequest,
+  GlobalDashboardResponse,
   ProjectFilter,
+  ProjectDashboardResponse,
   ProjectResponse,
   UpdateProjectRequest,
 } from '@claims-os/domain';
@@ -59,6 +61,16 @@ export function listProjects(
 
 export function getProject(projectId: string): Promise<ProjectResponse> {
   return request(`/projects/${encodeURIComponent(projectId)}`);
+}
+
+export function getProjectDashboard(
+  projectId: string,
+): Promise<ProjectDashboardResponse> {
+  return request(`/projects/${encodeURIComponent(projectId)}/dashboard`);
+}
+
+export function getGlobalDashboard(): Promise<GlobalDashboardResponse> {
+  return request('/dashboard');
 }
 
 export function createProject(

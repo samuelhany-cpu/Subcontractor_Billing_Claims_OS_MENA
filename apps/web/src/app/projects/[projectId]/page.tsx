@@ -8,8 +8,13 @@ import {
 import { ProjectForm } from '@/components/projects/project-form';
 import { ProjectSummary } from '@/components/projects/project-summary';
 import { ProjectTransition } from '@/components/projects/project-transition';
+import { DashboardAnalytics } from '@/components/dashboard/dashboard-analytics';
 import { formatDate, formatMoney } from '@/lib/project-format';
-import { getProject, ProjectsApiError } from '@/lib/projects-api';
+import {
+  getProject,
+  getProjectDashboard,
+  ProjectsApiError,
+} from '@/lib/projects-api';
 
 export default async function ProjectDetailPage({
   params,
@@ -25,6 +30,7 @@ export default async function ProjectDetailPage({
     throw error;
   }
   const archived = project.status === 'ARCHIVED';
+  const dashboard = await getProjectDashboard(project.id);
   return (
     <div className="page-stack">
       <Link className="back-link" href="/projects">
@@ -72,6 +78,13 @@ export default async function ProjectDetailPage({
         </aside>
       )}
       <ProjectSummary project={project} />
+      <DashboardAnalytics
+        categoryTotals={dashboard.categoryTotals}
+        weeklyExpenses={dashboard.weeklyExpenses}
+        topPayees={dashboard.topPayees}
+        recentExpenses={dashboard.recentExpenses}
+        recentTransfers={dashboard.recentTransfers}
+      />
       {!archived && (
         <section className="edit-panel" aria-labelledby="edit-heading">
           <h2 id="edit-heading">تعديل بيانات المشروع</h2>

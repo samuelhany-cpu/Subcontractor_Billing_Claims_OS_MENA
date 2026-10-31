@@ -31,6 +31,7 @@ export default async function RootLayout({
             <span>تشغيل محلي آمن وبسيط</span>
           </div>
           <nav className="main-nav" aria-label="التنقل الرئيسي">
+            <Link href="/">الرئيسية</Link>
             <Link href="/projects">المشروعات</Link>
             <Link href="/expenses">المصروفات</Link>
             <Link href="/transfers">التحويلات</Link>
