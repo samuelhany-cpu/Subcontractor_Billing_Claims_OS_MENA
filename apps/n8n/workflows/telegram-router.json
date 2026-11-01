@@ -1,0 +1,151 @@
+{
+  "name": "Claims OS Telegram Router",
+  "id": "claims-os-telegram-router-v1",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "telegram-update",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "9a7a59d8-18da-4338-a3b2-7675ca3d75a2",
+      "name": "Gateway Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.2,
+      "webhookId": "976cc293-f539-4a30-9bd6-c6dce5e972b3",
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const update=$json.body?.update; const supplied=$json.headers?.['x-gateway-secret']; const synthetic=$json.headers?.['x-gateway-test-mode']==='true'; if(!update||supplied!==$env.GATEWAY_N8N_SECRET) throw new Error('UNAUTHORIZED_GATEWAY_REQUEST'); const chatId=update.message?.chat?.id??update.callback_query?.message?.chat?.id; if(String(chatId)!==String($env.TELEGRAM_ALLOWED_CHAT_ID)) throw new Error('UNAUTHORIZED_TELEGRAM_CHAT'); const text=String(update.message?.text??'').trim(); const callback=String(update.callback_query?.data??''); const last=$getWorkflowStaticData('global').lastUpdateId; const duplicate=!synthetic&&typeof last==='number'&&update.update_id<=last; const balance=!duplicate&&(['/balance','الرصيد','الرصيد كام؟','فاضل كام؟'].includes(text)||callback.startsWith('b:')); const reply=text==='/start'?'أهلاً بيك في مساعد مصروفات المشاريع\\n\\nتقدر قريباً تسجل مصروف، تضيف تحويل وارد، أو تعرف رصيد المشروع.\\n\\nاكتب /help للمساعدة.':text==='/help'?'الأوامر المتاحة حالياً: /start و /help.':'أهلاً بيك. اكتب /start لعرض المساعدة.'; return [{json:{route:balance?'BALANCE':'STANDARD',duplicate,synthetic,updateId:update.update_id,chatId,text:reply,update}}];"
+      },
+      "id": "85941a1e-52f4-4516-a960-523f62b1aaf6",
+      "name": "Validate and Route",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "return $json.route==='STANDARD'?$input.all():[];"
+      },
+      "id": "1ce802c2-4f94-4c6c-a7f6-609206229438",
+      "name": "Route Standard Update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [430, -100]
+    },
+    {
+      "parameters": {
+        "jsCode": "return $json.route==='BALANCE'?$input.all():[];"
+      },
+      "id": "9d69f5e1-5e51-4af3-a62d-0f55b1c3fe24",
+      "name": "Route Balance Update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [430, 120]
+    },
+    {
+      "parameters": {
+        "method": "={{ $json.duplicate || $json.synthetic ? 'GET' : 'POST' }}",
+        "url": "={{ $json.duplicate || $json.synthetic ? 'http://127.0.0.1:5678/healthz' : 'https://api.telegram.org/bot' + $env.TELEGRAM_BOT_TOKEN + '/sendMessage' }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { chat_id: $json.chatId, text: $json.text } }}",
+        "options": {}
+      },
+      "id": "09c38d84-71b1-40f5-ac2e-3685d54ff31c",
+      "name": "Send Arabic Response",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [650, -100]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://n8n:5678/webhook/telegram-balance",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-gateway-secret",
+              "value": "={{ $env.GATEWAY_N8N_SECRET }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { update: $json.update } }}",
+        "options": { "timeout": 15000 }
+      },
+      "id": "530c2fca-daef-47b3-b96c-12e30a33cded",
+      "name": "Deliver Balance Update",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [650, 120]
+    },
+    {
+      "parameters": {
+        "jsCode": "const routed=$('Validate and Route').first().json; if(!routed.synthetic&&!routed.duplicate)$getWorkflowStaticData('global').lastUpdateId=routed.updateId; return [{json:{ok:true,accepted:true,duplicate:Boolean(routed.duplicate),synthetic:Boolean(routed.synthetic)}}];"
+      },
+      "id": "efc56668-b111-4c72-9377-70b1a0ed8e25",
+      "name": "Record Accepted Update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [880, 0]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: true, accepted: true } }}",
+        "options": {}
+      },
+      "id": "1ac39cb3-291b-46a0-9d22-3ff265e4e345",
+      "name": "Acknowledge Gateway Delivery",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [1100, 0]
+    }
+  ],
+  "connections": {
+    "Gateway Webhook": {
+      "main": [[{ "node": "Validate and Route", "type": "main", "index": 0 }]]
+    },
+    "Validate and Route": {
+      "main": [
+        [
+          { "node": "Route Standard Update", "type": "main", "index": 0 },
+          { "node": "Route Balance Update", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Route Standard Update": {
+      "main": [[{ "node": "Send Arabic Response", "type": "main", "index": 0 }]]
+    },
+    "Route Balance Update": {
+      "main": [
+        [{ "node": "Deliver Balance Update", "type": "main", "index": 0 }]
+      ]
+    },
+    "Send Arabic Response": {
+      "main": [
+        [{ "node": "Record Accepted Update", "type": "main", "index": 0 }]
+      ]
+    },
+    "Deliver Balance Update": {
+      "main": [
+        [{ "node": "Record Accepted Update", "type": "main", "index": 0 }]
+      ]
+    },
+    "Record Accepted Update": {
+      "main": [
+        [{ "node": "Acknowledge Gateway Delivery", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "pinData": {},
+  "versionId": "17def0d6-54c7-4a54-bd57-d5c0311b1c8f"
+}

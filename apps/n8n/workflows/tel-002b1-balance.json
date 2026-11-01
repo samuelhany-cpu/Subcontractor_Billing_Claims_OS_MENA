@@ -1,0 +1,595 @@
+{
+  "name": "TEL-002B1 Telegram Balance Conversation (inactive)",
+  "id": "claims-os-tel-002b1-balance-v1",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "telegram-balance",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "2c63831f-2d99-4703-9e9e-2d102bdf7903",
+      "name": "Authorized Gateway Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.2,
+      "webhookId": "7611c11d-89e8-4cfb-a11c-07df24293788",
+      "position": [0, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const update = $json.body?.update;\nconst supplied = $json.headers?.['x-gateway-secret'];\nif (!update || supplied !== $env.GATEWAY_N8N_SECRET) throw new Error('UNAUTHORIZED_GATEWAY_REQUEST');\nconst callback = update.callback_query;\nconst message = update.message;\nconst chatId = String(callback?.message?.chat?.id ?? message?.chat?.id ?? '');\nif (!chatId || chatId !== String($env.TELEGRAM_ALLOWED_CHAT_ID)) throw new Error('UNAUTHORIZED_TELEGRAM_CHAT');\nif (callback) {\n  return [{ json: { kind: 'CALLBACK', chatId, updateId: String(update.update_id), callbackId: callback.id, callbackData: String(callback.data ?? '') } }];\n}\nconst text = String(message?.text ?? '').trim();\nif (!['/balance', 'الرصيد', 'الرصيد كام؟', 'فاضل كام؟'].includes(text)) throw new Error('UNSUPPORTED_BALANCE_MESSAGE');\nreturn [{ json: { kind: 'MESSAGE', chatId, updateId: String(update.update_id), text } }];"
+      },
+      "id": "5f28b530-77f7-49fa-aa47-f5071c255de3",
+      "name": "Authorize and Normalize Balance Update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [220, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "return $json.kind === 'MESSAGE' ? $input.all() : [];"
+      },
+      "id": "d42ed55e-2b1b-40a6-86f1-790f193bc780",
+      "name": "Route Initial Balance Message",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "return $json.kind === 'CALLBACK' ? $input.all() : [];"
+      },
+      "id": "4cb896c0-3f05-4cf8-81d5-5b1e39f5f3e9",
+      "name": "Route Project Selection Callback",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, 520]
+    },
+    {
+      "parameters": {
+        "url": "http://api:4000/api/v1/projects?status=ACTIVE",
+        "options": {
+          "timeout": 10000,
+          "response": { "response": { "responseFormat": "json" } }
+        }
+      },
+      "id": "0f895a2d-1f1f-447d-99ee-9627547f7eb1",
+      "name": "Fetch Active Projects",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, 80]
+    },
+    {
+      "parameters": {
+        "jsCode": "const request = $('Authorize and Normalize Balance Update').first().json;\nconst payloads = $input.all().map((item) => item.json);\nconst projects = payloads.flatMap((payload) => Array.isArray(payload) ? payload : Array.isArray(payload?.data) ? payload.data : payload && typeof payload === 'object' ? [payload] : []);\nconst active = projects.filter((project) => project && typeof project.id === 'string' && typeof project.name === 'string' && project.status === 'ACTIVE').slice(0, 10);\nconst now = Date.now();\nconst conversationId = `${request.chatId.slice(-8)}-${Number(request.updateId).toString(36)}`;\nconst state = { telegramChatId: request.chatId, conversationId, intent: 'QUERY_BALANCE', step: active.length === 0 ? 'COMPLETED' : 'WAITING_FOR_PROJECT_SELECTION', projectId: '', collectedJson: active.length === 0 ? '{}' : JSON.stringify({ projects: active.map((project) => ({ id: project.id, name: project.name })) }), revision: 1, expiresAt: active.length === 0 ? new Date(now).toISOString() : new Date(now + 15 * 60_000).toISOString(), lastUpdateId: request.updateId };\nif (active.length === 0) return [{ json: { noProjects: true, reply: 'لا توجد مشاريع نشطة حالياً.', state } }];\nconst choices = active.map((project) => ({ id: project.id, name: project.name }));\nconst buttons = choices.map((project, index) => ([{ text: project.name, callback_data: `b:1:${index}` }]));\nconst reply = choices.length === 1 ? `هل تريد معرفة رصيد مشروع ${choices[0].name}؟` : 'اختر المشروع لمعرفة الرصيد:';\nreturn [{ json: { noProjects: false, reply, buttons, state } }];"
+      },
+      "id": "3aa65c6b-2f0d-4d02-a330-5c71e14c2c8f",
+      "name": "Build Project Selection State",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [880, 80]
+    },
+    {
+      "parameters": {
+        "resource": "row",
+        "operation": "upsert",
+        "dataTableId": {
+          "mode": "id",
+          "value": "__SET_TEL002B1_DATA_TABLE_ID__"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "telegramChatId",
+              "condition": "eq",
+              "keyValue": "={{ $('Authorize and Normalize Balance Update').first().json.chatId }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "telegramChatId": "={{ $json.state.telegramChatId }}",
+            "conversationId": "={{ $json.state.conversationId }}",
+            "intent": "={{ $json.state.intent }}",
+            "step": "={{ $json.noProjects ? 'COMPLETED' : $json.state.step }}",
+            "projectId": "={{ $json.state.projectId }}",
+            "collectedJson": "={{ $json.noProjects ? '{}' : $json.state.collectedJson }}",
+            "revision": "={{ $json.noProjects ? 1 : $json.state.revision }}",
+            "expiresAt": "={{ $json.noProjects ? new Date().toISOString() : $json.state.expiresAt }}",
+            "lastUpdateId": "={{ $json.state?.lastUpdateId ?? $('Authorize and Normalize Balance Update').first().json.updateId }}"
+          }
+        }
+      },
+      "id": "4db3dc43-b3c7-4a62-b426-cdc50a6bc6b5",
+      "name": "Persist Project Selection State",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [1100, 80]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://api.telegram.org/bot' + $env.TELEGRAM_BOT_TOKEN + '/sendMessage' }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { chat_id: $('Authorize and Normalize Balance Update').first().json.chatId, text: $('Build Project Selection State').first().json.reply, reply_markup: $('Build Project Selection State').first().json.noProjects ? undefined : { inline_keyboard: $('Build Project Selection State').first().json.buttons } } }}",
+        "options": { "timeout": 10000 }
+      },
+      "id": "5c9d8448-9a15-4369-babd-bfe0d15f28fc",
+      "name": "Send Project Selection",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1320, 80]
+    },
+    {
+      "parameters": {
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "mode": "id",
+          "value": "__SET_TEL002B1_DATA_TABLE_ID__"
+        },
+        "returnAll": false,
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "telegramChatId",
+              "condition": "eq",
+              "keyValue": "={{ $('Authorize and Normalize Balance Update').first().json.chatId }}"
+            }
+          ]
+        }
+      },
+      "id": "91330338-7d14-4f39-8efa-ec2546d558be",
+      "name": "Load Callback Conversation State",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [660, 520]
+    },
+    {
+      "parameters": {
+        "jsCode": "const request = $('Authorize and Normalize Balance Update').first().json;\nconst state = $json;\nconst invalid = (reason) => [{ json: { valid: false, callbackId: request.callbackId, callbackText: reason } }];\nif (!state?.telegramChatId || state.telegramChatId !== request.chatId) return invalid('الاختيار غير متاح. اكتب /balance من جديد.');\nif (state.intent !== 'QUERY_BALANCE' || state.step !== 'WAITING_FOR_PROJECT_SELECTION') return invalid('هذا الاختيار لم يعد صالحاً. اكتب /balance من جديد.');\nif (Date.now() >= Date.parse(state.expiresAt)) return invalid('انتهت مهلة الاختيار. اكتب /balance من جديد.');\nconst parts = String(request.callbackData).split(':');\nif (parts.length !== 3 || parts[0] !== 'b') return invalid('اختيار مشروع غير صالح.');\nconst revision = Number(parts[1]); const index = Number(parts[2]);\nif (!Number.isInteger(revision) || revision !== Number(state.revision) || !Number.isInteger(index) || index < 0) return invalid('هذا الاختيار قديم. اكتب /balance من جديد.');\nlet context; try { context = JSON.parse(state.collectedJson); } catch { return invalid('تعذر قراءة الاختيار. اكتب /balance من جديد.'); }\nconst project = Array.isArray(context.projects) ? context.projects[index] : undefined;\nif (!project || typeof project.id !== 'string' || typeof project.name !== 'string') return invalid('المشروع غير متاح. اكتب /balance من جديد.');\nreturn [{ json: { valid: true, callbackId: request.callbackId, callbackText: 'جارٍ جلب الرصيد…', state, projectId: project.id, projectName: project.name, nextRevision: revision + 1 } }];"
+      },
+      "id": "699b4ea8-97d4-4352-8770-4fd8dc22763d",
+      "name": "Validate Project Selection Callback",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [880, 520]
+    },
+    {
+      "parameters": {
+        "jsCode": "return $json.valid === true ? $input.all() : [];"
+      },
+      "id": "f6d1c446-7e96-4686-b6ca-6ddcfc7d8c07",
+      "name": "Route Valid Project Selection",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1100, 520]
+    },
+    {
+      "parameters": {
+        "jsCode": "return $json.valid === false ? $input.all() : [];"
+      },
+      "id": "b8dcb0e6-39a5-4e1e-a344-00b3f2e61f34",
+      "name": "Route Invalid Project Selection",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1100, 690]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://api.telegram.org/bot' + $env.TELEGRAM_BOT_TOKEN + '/answerCallbackQuery' }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { callback_query_id: $json.callbackId, text: $json.callbackText, show_alert: false } }}",
+        "options": { "timeout": 10000 }
+      },
+      "id": "d5337e21-5e1d-46e7-bd4c-6d2764196022",
+      "name": "Acknowledge Valid Callback",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1320, 420]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://api.telegram.org/bot' + $env.TELEGRAM_BOT_TOKEN + '/answerCallbackQuery' }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { callback_query_id: $json.callbackId, text: $json.callbackText, show_alert: true } }}",
+        "options": { "timeout": 10000 }
+      },
+      "id": "8d085c0e-5d78-4a60-867f-f0240ed4c477",
+      "name": "Reject Invalid Callback",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1320, 650]
+    },
+    {
+      "parameters": {
+        "resource": "row",
+        "operation": "upsert",
+        "dataTableId": {
+          "mode": "id",
+          "value": "__SET_TEL002B1_DATA_TABLE_ID__"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "telegramChatId",
+              "condition": "eq",
+              "keyValue": "={{ $('Authorize and Normalize Balance Update').first().json.chatId }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "telegramChatId": "={{ $('Validate Project Selection Callback').first().json.state.telegramChatId }}",
+            "conversationId": "={{ $('Validate Project Selection Callback').first().json.state.conversationId }}",
+            "intent": "QUERY_BALANCE",
+            "step": "FETCHING_BALANCE",
+            "projectId": "={{ $('Validate Project Selection Callback').first().json.projectId }}",
+            "collectedJson": "={{ JSON.stringify({ projectName: $('Validate Project Selection Callback').first().json.projectName }) }}",
+            "revision": "={{ $('Validate Project Selection Callback').first().json.nextRevision }}",
+            "expiresAt": "={{ $('Validate Project Selection Callback').first().json.state.expiresAt }}",
+            "lastUpdateId": "={{ $('Authorize and Normalize Balance Update').first().json.updateId }}"
+          }
+        }
+      },
+      "id": "b4a6d7dd-097e-4972-9f87-93679df61579",
+      "name": "Persist Selected Project",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [1540, 420]
+    },
+    {
+      "parameters": {
+        "url": "={{ 'http://api:4000/api/v1/projects/' + $('Validate Project Selection Callback').first().json.projectId + '/dashboard' }}",
+        "options": {
+          "timeout": 10000,
+          "response": { "response": { "responseFormat": "json" } }
+        }
+      },
+      "id": "2dbfd4de-4a4b-4cbf-a524-0444ac28ac41",
+      "name": "Fetch Selected Project Dashboard",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "onError": "continueErrorOutput",
+      "position": [1760, 420]
+    },
+    {
+      "parameters": {
+        "jsCode": "const dashboard = $json;\nconst selected = $('Validate Project Selection Callback').first().json;\nconst fields = ['openingBalance', 'totalIncomingTransfers', 'totalExpenses', 'availableBalance'];\nconst valid = dashboard && dashboard.projectId === selected.projectId && fields.every((field) => typeof dashboard[field] === 'string');\nif (!valid) return [{ json: { valid: false, reply: 'تعذر جلب رصيد المشروع الآن. حاول مرة أخرى لاحقاً.' } }];\nconst money = (value) => `${value} ج.م`;\nconst reply = `رصيد المشروع: ${selected.projectName}\\n\\nرصيد البداية: ${money(dashboard.openingBalance)}\\nإجمالي التحويلات الواردة: ${money(dashboard.totalIncomingTransfers)}\\nإجمالي المصروفات: ${money(dashboard.totalExpenses)}\\nالرصيد المتاح: ${money(dashboard.availableBalance)}`;\nreturn [{ json: { valid: true, reply, projectId: selected.projectId, projectName: selected.projectName } }];"
+      },
+      "id": "d98ae254-798d-48e6-9e49-76045d07f9b1",
+      "name": "Format Arabic Balance Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1980, 420]
+    },
+    {
+      "parameters": {
+        "jsCode": "return $json.valid === true ? $input.all() : [];"
+      },
+      "id": "492ed9f3-fa65-4753-861b-a7489db9f74f",
+      "name": "Route Valid Dashboard Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2200, 420]
+    },
+    {
+      "parameters": {
+        "jsCode": "return $json.valid === false ? $input.all() : [];"
+      },
+      "id": "a79538dd-e337-42ff-867f-bf5da63d02ed",
+      "name": "Route Invalid Dashboard Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2200, 540]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://api.telegram.org/bot' + $env.TELEGRAM_BOT_TOKEN + '/sendMessage' }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { chat_id: $('Authorize and Normalize Balance Update').first().json.chatId, text: $json.reply } }}",
+        "options": { "timeout": 10000 }
+      },
+      "id": "aeb9bb38-7777-4fef-97c2-1e9a7de00d33",
+      "name": "Send Arabic Balance Response",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2420, 320]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { reply: 'تعذر جلب رصيد المشروع الآن. حاول مرة أخرى لاحقاً.' } }];"
+      },
+      "id": "a1ee1b7c-8364-4ac8-9be9-04445436c9c8",
+      "name": "Format Dashboard Request Failure",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1980, 650]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'https://api.telegram.org/bot' + $env.TELEGRAM_BOT_TOKEN + '/sendMessage' }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { chat_id: $('Authorize and Normalize Balance Update').first().json.chatId, text: $json.reply } }}",
+        "options": { "timeout": 10000 }
+      },
+      "id": "5f12ddf7-91a5-429a-ba5b-0cb0738a3b1e",
+      "name": "Send Dashboard Error Response",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2200, 650]
+    },
+    {
+      "parameters": {
+        "resource": "row",
+        "operation": "upsert",
+        "dataTableId": {
+          "mode": "id",
+          "value": "__SET_TEL002B1_DATA_TABLE_ID__"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "telegramChatId",
+              "condition": "eq",
+              "keyValue": "={{ $('Authorize and Normalize Balance Update').first().json.chatId }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "telegramChatId": "={{ $('Validate Project Selection Callback').first().json.state.telegramChatId }}",
+            "conversationId": "={{ $('Validate Project Selection Callback').first().json.state.conversationId }}",
+            "intent": "QUERY_BALANCE",
+            "step": "COMPLETED",
+            "projectId": "={{ $('Validate Project Selection Callback').first().json.projectId }}",
+            "collectedJson": "={{ JSON.stringify({ projectName: $('Validate Project Selection Callback').first().json.projectName }) }}",
+            "revision": "={{ $('Validate Project Selection Callback').first().json.nextRevision }}",
+            "expiresAt": "={{ new Date().toISOString() }}",
+            "lastUpdateId": "={{ $('Authorize and Normalize Balance Update').first().json.updateId }}"
+          }
+        }
+      },
+      "id": "92e7c5e2-61c2-49b3-9b02-a85220af6298",
+      "name": "Complete Balance Conversation",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [2640, 320]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: true, accepted: true } }}",
+        "options": {}
+      },
+      "id": "64c39a36-0133-4937-b6b5-a194c8ae1c27",
+      "name": "Acknowledge Gateway Delivery",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [2860, 420]
+    }
+  ],
+  "connections": {
+    "Authorized Gateway Webhook": {
+      "main": [
+        [
+          {
+            "node": "Authorize and Normalize Balance Update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Authorize and Normalize Balance Update": {
+      "main": [
+        [
+          {
+            "node": "Route Initial Balance Message",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Route Project Selection Callback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Initial Balance Message": {
+      "main": [
+        [{ "node": "Fetch Active Projects", "type": "main", "index": 0 }]
+      ]
+    },
+    "Route Project Selection Callback": {
+      "main": [
+        [
+          {
+            "node": "Load Callback Conversation State",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Active Projects": {
+      "main": [
+        [
+          {
+            "node": "Build Project Selection State",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Project Selection State": {
+      "main": [
+        [
+          {
+            "node": "Persist Project Selection State",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Persist Project Selection State": {
+      "main": [
+        [{ "node": "Send Project Selection", "type": "main", "index": 0 }]
+      ]
+    },
+    "Send Project Selection": {
+      "main": [
+        [{ "node": "Acknowledge Gateway Delivery", "type": "main", "index": 0 }]
+      ]
+    },
+    "Load Callback Conversation State": {
+      "main": [
+        [
+          {
+            "node": "Validate Project Selection Callback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Project Selection Callback": {
+      "main": [
+        [
+          {
+            "node": "Route Valid Project Selection",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Route Invalid Project Selection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Valid Project Selection": {
+      "main": [
+        [{ "node": "Acknowledge Valid Callback", "type": "main", "index": 0 }]
+      ]
+    },
+    "Route Invalid Project Selection": {
+      "main": [
+        [{ "node": "Reject Invalid Callback", "type": "main", "index": 0 }]
+      ]
+    },
+    "Reject Invalid Callback": {
+      "main": [
+        [{ "node": "Acknowledge Gateway Delivery", "type": "main", "index": 0 }]
+      ]
+    },
+    "Acknowledge Valid Callback": {
+      "main": [
+        [{ "node": "Persist Selected Project", "type": "main", "index": 0 }]
+      ]
+    },
+    "Persist Selected Project": {
+      "main": [
+        [
+          {
+            "node": "Fetch Selected Project Dashboard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Selected Project Dashboard": {
+      "main": [
+        [
+          {
+            "node": "Format Arabic Balance Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Dashboard Request Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Arabic Balance Response": {
+      "main": [
+        [
+          {
+            "node": "Route Valid Dashboard Response",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Route Invalid Dashboard Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Valid Dashboard Response": {
+      "main": [
+        [{ "node": "Send Arabic Balance Response", "type": "main", "index": 0 }]
+      ]
+    },
+    "Route Invalid Dashboard Response": {
+      "main": [
+        [
+          {
+            "node": "Send Dashboard Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Dashboard Error Response": {
+      "main": [
+        [{ "node": "Acknowledge Gateway Delivery", "type": "main", "index": 0 }]
+      ]
+    },
+    "Send Arabic Balance Response": {
+      "main": [
+        [
+          {
+            "node": "Complete Balance Conversation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Complete Balance Conversation": {
+      "main": [
+        [{ "node": "Acknowledge Gateway Delivery", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "pinData": {},
+  "versionId": "c8cf4495-a235-44cc-aa3b-21b7c9d5ed63"
+}

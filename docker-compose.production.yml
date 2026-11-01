@@ -192,12 +192,93 @@ services:
       retries: 12
       start_period: 15s
 
+  n8n:
+    image: n8nio/n8n@sha256:5450af5dbde41b9a770a1e4cc67752e256aa9898294c903f91dccb638eeb86cf
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:${N8N_EDITOR_PORT:-5678}:5678'
+    entrypoint: ['/bin/sh', '-c']
+    command:
+      - >-
+        if [ ! -f /home/node/.n8n/.claims-os-router-imported ]; then
+        n8n import:workflow --input=/workflows/telegram-router.json &&
+        touch /home/node/.n8n/.claims-os-router-imported;
+        fi;
+        exec n8n start
+    environment:
+      N8N_HOST: n8n
+      N8N_PORT: '5678'
+      N8N_PROTOCOL: http
+      N8N_USER_FOLDER: /home/node/.n8n
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:?Set N8N_ENCRYPTION_KEY in .env.production}
+      N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: 'true'
+      N8N_RUNNERS_ENABLED: 'true'
+      DB_SQLITE_POOL_SIZE: '2'
+      N8N_GIT_NODE_DISABLE_BARE_REPOS: 'true'
+      N8N_DIAGNOSTICS_ENABLED: 'false'
+      N8N_PERSONALIZATION_ENABLED: 'false'
+      N8N_SECURE_COOKIE: 'false'
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:?Set TELEGRAM_BOT_TOKEN in .env.production}
+      TELEGRAM_ALLOWED_CHAT_ID: ${TELEGRAM_ALLOWED_CHAT_ID:?Set TELEGRAM_ALLOWED_CHAT_ID in .env.production}
+      GATEWAY_N8N_SECRET: ${GATEWAY_N8N_SECRET:?Set GATEWAY_N8N_SECRET in .env.production}
+      APP_INTERNAL_API_URL: http://api:4000/api/v1
+      AUTOMATION_INTERNAL_API_SECRET: ${AUTOMATION_INTERNAL_API_SECRET:?Set AUTOMATION_INTERNAL_API_SECRET in .env.production}
+    volumes:
+      - claims_n8n_data:/home/node/.n8n
+      - ./apps/n8n/workflows:/workflows:ro
+    networks:
+      - backend
+      - egress
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'node -e "fetch(''http://127.0.0.1:5678/healthz'').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))"',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  telegram-gateway:
+    build:
+      context: .
+      dockerfile: apps/telegram-gateway/Dockerfile
+    restart: unless-stopped
+    environment:
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:?Set TELEGRAM_BOT_TOKEN in .env.production}
+      TELEGRAM_ALLOWED_CHAT_ID: ${TELEGRAM_ALLOWED_CHAT_ID:?Set TELEGRAM_ALLOWED_CHAT_ID in .env.production}
+      N8N_GATEWAY_WEBHOOK_URL: http://n8n:5678/webhook/telegram-update
+      GATEWAY_N8N_SECRET: ${GATEWAY_N8N_SECRET:?Set GATEWAY_N8N_SECRET in .env.production}
+      TELEGRAM_GATEWAY_STATE_PATH: /data/state.json
+      TELEGRAM_POLL_TIMEOUT_SECONDS: '25'
+    volumes:
+      - claims_telegram_gateway_data:/data
+    depends_on:
+      n8n:
+        condition: service_healthy
+    networks:
+      - backend
+      - egress
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'node -e "fetch(''http://127.0.0.1:8080/health'').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))"',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
 networks:
   frontend:
     name: claims-os-prod_frontend
   backend:
     name: claims-os-prod_backend
     internal: true
+  egress:
+    name: claims-os-prod_egress
 
 volumes:
   # Deliberately distinct from development's `claims-os_*` volumes. Compose
@@ -208,3 +289,7 @@ volumes:
     name: claims-os-prod_claims_postgres_data
   claims_redis_data:
     name: claims-os-prod_claims_redis_data
+  claims_n8n_data:
+    name: claims-os-prod_claims_n8n_data
+  claims_telegram_gateway_data:
+    name: claims-os-prod_claims_telegram_gateway_data

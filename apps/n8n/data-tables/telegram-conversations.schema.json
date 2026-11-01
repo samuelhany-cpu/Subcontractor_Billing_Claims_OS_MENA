@@ -1,0 +1,17 @@
+{
+  "name": "claims_os_telegram_conversations",
+  "purpose": "TEL-002B1 persistent non-financial Telegram conversation state",
+  "uniqueKey": ["telegramChatId"],
+  "columns": [
+    { "name": "telegramChatId", "type": "string", "required": true },
+    { "name": "conversationId", "type": "string", "required": true },
+    { "name": "intent", "type": "string", "required": true },
+    { "name": "step", "type": "string", "required": true },
+    { "name": "projectId", "type": "string", "required": false },
+    { "name": "collectedJson", "type": "string", "required": true },
+    { "name": "revision", "type": "number", "required": true },
+    { "name": "expiresAt", "type": "string", "required": true },
+    { "name": "lastUpdateId", "type": "string", "required": true }
+  ],
+  "setup": "Create this table once in n8n Data Tables, then set TEL-002B1 workflow Data Table nodes to this table ID. The workflow processes one allowed chat and rejects update_id values at or below lastUpdateId. Data Table upsert is not treated as a financial lock; TEL-001 remains the authoritative transaction/idempotency layer."
+}
