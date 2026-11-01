@@ -1,0 +1,23 @@
+{
+  "name": "@claims-os/telegram-gateway",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "lint": "eslint \"src/**/*.ts\"",
+    "typecheck": "tsc --noEmit",
+    "test": "tsc -p tsconfig.json && node --test dist/src/*.test.js",
+    "start": "node dist/src/main.js"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.18.0",
+    "@types/node": "^24.0.0",
+    "eslint": "^9.18.0",
+    "eslint-config-prettier": "^10.0.1",
+    "eslint-plugin-prettier": "^5.2.2",
+    "globals": "^17.0.0",
+    "typescript": "^5.9.0",
+    "typescript-eslint": "^8.20.0"
+  }
+}
