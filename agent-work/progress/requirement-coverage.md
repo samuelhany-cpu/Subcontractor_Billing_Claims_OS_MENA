@@ -8,8 +8,10 @@ Current status: DASH-001 is complete and verified. RPT-001 remains not started.
   single-chat drafts; Zod validation; transactional confirmation; immutable
   result linkage; Telegram source/audit attribution; and PostgreSQL exactly-once
   verification are implemented.
-- TEL-002, the Telegram long-polling gateway, n8n orchestration, and live bot
-  activation remain out of scope and unstarted.
+- TEL-002A long-polling gateway and private n8n Router are deployed with a
+  registered authenticated production webhook and durable gateway offsets. A
+  live `/start` reply is verified; expense, transfer, and balance conversations
+  remain follow-on work.
 - A restore-verified external production backup exists. After explicit owner
   approval, the additive AutomationDraft result-link migration was applied and
   post-deployment reconciliation, readiness, and authorization verification
@@ -44,7 +46,8 @@ EXP-001 delivers active Expense entry/edit/listing and private attachments. Soft
 | RPT-005 | Complete | Global/project dashboard cards, active-project summaries, category distribution, Cairo-aware 12-week trend, top payees, and recent activity; exact Decimal and soft-delete behavior verified | Backup status remains deferred to BKP-001 |
 | IMP-001–IMP-010 | Database foundation complete; workflow not started | Import metadata, statuses, hashes, row uniqueness, optional Expense relation | IMP-001 |
 | TEL-001 | Deployed and verified | Authenticated, owner-scoped Automation API; transactional idempotent expense/transfer confirmation, audit/source attribution, real PostgreSQL concurrency/rollback tests, restore-verified backup, production migration, health, and reconciliation | Telegram transport/workflow remains TEL-002 |
-| TEL-002–TEL-016 | Not started | No gateway, n8n workflow, or live Telegram activation | TEL-002 and owner activation decisions |
+| TEL-002A | Complete and live-verified | Private long-poll gateway, persistent offsets, gateway/n8n authentication, registered Arabic `/start`/`/help` Router workflow, private egress, and owner-verified live response | TEL-002B financial conversations |
+| TEL-002B–TEL-016 | Not started | Financial conversations and other Telegram workflows remain pending | TEL-002 follow-on work |
 | BKP-001–BKP-004 | Not started | No backup behavior added | BKP-001; scheduling gated by OPEN-003–OPEN-005 |
 
 ## Preserved technical foundation

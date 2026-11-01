@@ -9,7 +9,10 @@
   Automation tests, including 20-way expense/transfer races and all four
   financial/audit rollback cases. Production volumes, credentials, and Villa
   Obour records were not used.
-- TEL-002 (gateway/n8n) and RPT-001 remain unstarted.
+- TEL-002A long-polling Gateway and private n8n Router are activated in the
+  production-local stack. The n8n production webhook, authenticated synthetic
+  delivery, persistent gateway offset, non-root runtime, and live Arabic
+  `/start` reply are verified.
 - TEL-001 Automation API Phase 1 is deployed and verified in production-local
   Docker after explicit owner approval. The additive migration is applied, API
   readiness and authorization checks pass, and post-deployment financial
@@ -47,6 +50,8 @@
 9. RPT-001 — Date-range reports and one-sheet Excel export.
 10. IMP-001 — Legacy and organized Excel preview/commit/import reporting.
 11. TEL-001 — Provider-neutral automation APIs and idempotent drafts.
-12. TEL-002 — n8n workflows; live activation remains gated by OPEN-001 and OPEN-002.
+12. TEL-002A — long-polling Gateway and `/start` Router implemented; live
+    activation remains owner-gated. Follow-on financial conversations remain
+    pending.
 13. BKP-001 — Backup package, Google Drive workflow, and restore rehearsal; scheduling remains gated by OPEN-003 through OPEN-005.
 14. REL-001 — Windows/LAN production-local release and full acceptance suite.
