@@ -11,6 +11,62 @@ For the complete Windows Docker Desktop deployment (including private-LAN
 access and persistent-volume safety), see
 [`docs/engineering/04_WINDOWS_LOCAL_DEPLOYMENT.md`](docs/engineering/04_WINDOWS_LOCAL_DEPLOYMENT.md).
 
+## What this project demonstrates
+
+A practical Arabic-first, single-user expense tracker for multiple construction
+projects. The app is designed to run on one Windows computer and be reachable
+only on a trusted private network. It is **not** a multi-tenant SaaS, ERP,
+payroll system, or public cloud service.
+
+Current source modules and pages include:
+
+- **Projects & dashboard:** project records, opening balances, archive/restore,
+  and a global dashboard backed by a NestJS dashboard controller.
+- **Expenses & funding:** expense creation, updates, soft delete/restore,
+  incoming transfers, and project totals.
+- **Payees & categories:** records used to organize expenses and agreements.
+- **Attachments & audit:** private object-storage attachment handling and
+  audit-oriented financial workflows.
+- **Automation foundation:** guarded draft creation, lookup, confirmation, and
+  cancellation endpoints. This is an API foundation; **Telegram/n8n runtime
+  is not part of the documented production-local Compose stack**.
+
+These are features represented in the source tree, not a claim that every
+planned milestone is finished or that the system has been deployed publicly.
+
+## Engineering highlights
+
+- **Stack:** Next.js, NestJS, PostgreSQL + Prisma, Redis, private MinIO storage,
+  pnpm/Turborepo, and Docker Compose.
+- **Correctness:** explicit financial domain rules, audit support, and
+  concurrency/idempotency-focused automation code and test infrastructure.
+- **Reliability:** liveness/readiness checks, correlation IDs, structured
+  logging, typed configuration, and separate local/production-like Compose
+  workflows.
+- **Deployment boundaries:** production-local deployment publishes the web
+  interface while keeping the database, object storage, Redis, and API off the
+  host's public-facing ports.
+
+### Explore the code
+
+| Area | Directory |
+| --- | --- |
+| Next.js Arabic UI | [`apps/web/src/app`](apps/web/src/app) |
+| NestJS modules | [`apps/api/src`](apps/api/src) |
+| Shared domain logic | [`packages`](packages) |
+| Architecture & product documentation | [`docs/00_README.md`](docs/00_README.md) |
+| Windows private-LAN deployment guide | [`docs/engineering/04_WINDOWS_LOCAL_DEPLOYMENT.md`](docs/engineering/04_WINDOWS_LOCAL_DEPLOYMENT.md) |
+| Prioritized product backlog | [`docs/delivery/01_BACKLOG.md`](docs/delivery/01_BACKLOG.md) |
+
+## Scope & status
+
+This is an evolving locally hosted application. The source contains the core
+project, expense, transfer, payee, category, and dashboard modules, plus the
+automation draft API. Planned reporting, n8n/Telegram integration, and managed
+backups should **not** be assumed complete based on the repository's scope
+documents. Consult the backlog and change history before representing a
+planned feature as shipped.
+
 ## Prerequisites
 
 - Node.js 20.11 or later
@@ -103,9 +159,11 @@ pnpm dev:web
 Default addresses:
 
 - API: `http://localhost:4000/api/v1`
-- Web scaffold: `http://localhost:3000`
+- Web application: `http://localhost:3000`
 
-The API currently exposes diagnostics only:
+The API exposes multiple feature modules (including projects, dashboard,
+expenses, transfers, payees, categories, and an automation draft API).
+Health endpoints remain available for operational checks:
 
 | Endpoint                   | Purpose                                                  |
 | -------------------------- | -------------------------------------------------------- |
